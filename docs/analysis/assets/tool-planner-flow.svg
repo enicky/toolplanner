@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="560" viewBox="0 0 1120 560" role="img" aria-labelledby="title description">
+  <title id="title">Tool Planner borrow and return flow</title>
+  <desc id="description">A user scans an elevator QR code and uses the mobile web app to borrow or return it. The React app calls a Python API, which records state and history in PostgreSQL. Managers use a protected management page through the same app and API.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#6046c9"/>
+    </marker>
+    <style>
+      .title { font: 700 25px Arial, sans-serif; fill: #24145f; }
+      .label { font: 700 17px Arial, sans-serif; fill: #24145f; }
+      .body { font: 15px Arial, sans-serif; fill: #3e3a52; }
+      .small { font: 13px Arial, sans-serif; fill: #514d63; }
+      .box { fill: #ffffff; stroke: #b7a9ef; stroke-width: 2; }
+      .accent { fill: #f0edfc; stroke: #6046c9; stroke-width: 2; }
+      .line { fill: none; stroke: #6046c9; stroke-width: 3; marker-end: url(#arrow); }
+      .dash { fill: none; stroke: #8d7bd7; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1120" height="560" rx="20" fill="#faf9fd"/>
+  <text x="48" y="52" class="title">A simple, auditable equipment handoff</text>
+
+  <rect x="48" y="110" width="220" height="138" rx="16" class="box"/>
+  <text x="72" y="145" class="label">Employee</text>
+  <text x="72" y="177" class="body">Scans the elevator QR</text>
+  <text x="72" y="202" class="body">and submits borrow or</text>
+  <text x="72" y="227" class="body">return details</text>
+
+  <rect x="340" y="110" width="220" height="138" rx="16" class="accent"/>
+  <text x="364" y="145" class="label">React web app</text>
+  <text x="364" y="177" class="body">Mobile-first QR page</text>
+  <text x="364" y="202" class="body">and protected manager</text>
+  <text x="364" y="227" class="body">experience</text>
+
+  <rect x="632" y="110" width="220" height="138" rx="16" class="box"/>
+  <text x="656" y="145" class="label">Python API</text>
+  <text x="656" y="177" class="body">Validates identity and</text>
+  <text x="656" y="202" class="body">permissions; performs</text>
+  <text x="656" y="227" class="body">atomic state changes</text>
+
+  <rect x="924" y="110" width="148" height="138" rx="16" class="accent"/>
+  <text x="948" y="145" class="label">PostgreSQL</text>
+  <text x="948" y="177" class="body">Current state</text>
+  <text x="948" y="202" class="body">and immutable</text>
+  <text x="948" y="227" class="body">loan history</text>
+
+  <path d="M268 179 H332" class="line"/>
+  <path d="M560 179 H624" class="line"/>
+  <path d="M852 179 H916" class="line"/>
+  <path d="M916 218 H860" class="dash"/>
+  <path d="M624 218 H568" class="dash"/>
+  <path d="M332 218 H276" class="dash"/>
+  <text x="282" y="278" class="small">request</text>
+  <text x="875" y="278" class="small">saved result</text>
+
+  <rect x="48" y="354" width="476" height="142" rx="16" class="box"/>
+  <text x="74" y="391" class="label">Borrow</text>
+  <text x="74" y="423" class="body">Available elevator → create one active loan</text>
+  <text x="74" y="451" class="body">Capture borrower, department, location, and start time</text>
+  <text x="74" y="478" class="small">Database prevents competing checkouts from both succeeding</text>
+
+  <rect x="596" y="354" width="476" height="142" rx="16" class="box"/>
+  <text x="622" y="391" class="label">Return</text>
+  <text x="622" y="423" class="body">Active loan → record return time and location</text>
+  <text x="622" y="451" class="body">Keep the completed loan for history and reporting</text>
+  <text x="622" y="478" class="small">Same QR link; server validates each state transition</text>
+</svg>
