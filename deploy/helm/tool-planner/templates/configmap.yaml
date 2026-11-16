@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tool-planner.fullname" . }}-config
+  labels:
+    {{- include "tool-planner.labels" . | nindent 4 }}
+data:
+  TOOLPLANNER_PUBLIC_BASE_URL: {{ .Values.application.publicBaseUrl | quote }}
+  TOOLPLANNER_COOKIE_SECURE: {{ .Values.application.cookieSecure | quote }}
+  TOOLPLANNER_SESSION_TTL_HOURS: {{ .Values.application.sessionTtlHours | quote }}
+  TOOLPLANNER_CORS_ORIGINS: {{ printf "[%q]" .Values.application.publicBaseUrl | quote }}

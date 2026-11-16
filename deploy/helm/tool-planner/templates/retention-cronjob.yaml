@@ -1,0 +1,41 @@
+{{- if .Values.retention.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "tool-planner.fullname" . }}-retention
+  labels:
+    {{- include "tool-planner.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.retention.schedule | quote }}
+  timeZone: {{ .Values.retention.timeZone | quote }}
+  successfulJobsHistoryLimit: {{ .Values.retention.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.retention.failedJobsHistoryLimit }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/component: retention
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: retention
+              image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+              imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+              securityContext:
+                {{- toYaml .Values.securityContext.api | nindent 16 }}
+              command: ["python", "-m", "toolplanner.retention"]
+              env:
+                - name: TOOLPLANNER_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret }}
+                      key: {{ .Values.secrets.databaseUrlKey }}
+{{- end }}

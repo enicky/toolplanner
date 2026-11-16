@@ -17,17 +17,25 @@ description: Analyze, design, implement, test, and deploy the internal Tool Plan
    default and state it.
 3. **Plan narrowly.** Identify affected components, invariants, data migration
    needs, tests, and documentation. Make the smallest complete change.
-4. **Implement.** Use Python for backend code and PostgreSQL for persistent
+   When documenting a schema or architecture, create a polished, accessible
+   image diagram (prefer SVG) and embed it in the relevant documentation; do
+   not use ASCII-art diagrams.
+4. **Set the branch.** Before implementing a phase or feature, check the current
+   Git branch. If on `main`, create a dedicated feature branch first. If already
+   on a feature branch, keep using it; do not create another branch for each
+   feature or phase. Do not create a feature branch from another non-feature
+   branch; ask before switching or branching from that state.
+5. **Implement.** Use Python for backend code and PostgreSQL for persistent
    application data. Follow existing project patterns; keep HTTP handling,
    domain rules, persistence, and UI responsibilities clear.
-5. **Test every behavior change.** Add or update focused automated tests for
+6. **Test every behavior change.** Add or update focused automated tests for
    success, validation, authorization, conflict/concurrency, and relevant edge
    cases. Run the narrowest applicable tests, then lint/type checks or builds
    affected by the change. Never claim checks passed unless they ran.
-6. **Update documentation and tracking.** Update directly related setup/API/
+7. **Update documentation and tracking.** Update directly related setup/API/
    operational docs. Mark roadmap items complete only with implementation and
    verification evidence; do not treat a plan as completed work.
-7. **Report.** Summarize changed behavior, decisions/assumptions, tests run and
+8. **Report.** Summarize changed behavior, decisions/assumptions, tests run and
    results, and remaining risks or follow-up work.
 
 ## Domain invariants

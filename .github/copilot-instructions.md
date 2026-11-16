@@ -10,6 +10,14 @@
 - Treat `docs/analysis/README.md` as the product/architecture proposal,
   `docs/analysis/open-questions.md` as the decision register, and
   `docs/analysis/roadmap.md` as the implementation progress tracker.
+- When creating or revising schemas or architecture, include a polished,
+  accessible image diagram (prefer SVG) in the repository and embed it in the
+  relevant documentation. Do not use ASCII-art diagrams.
+- Before implementing a phase or feature, check the current Git branch. If on
+  `main`, create a dedicated feature branch first. If already on a feature
+  branch, continue there rather than creating another branch. Do not create a
+  feature branch from another non-feature branch; ask before switching or
+  branching from that state.
 - Preserve the invariant that an elevator has at most one outstanding custody
   record, including an administratively cancelled loan that has not physically
   returned. Enforce state changes and authorization on the server and in the

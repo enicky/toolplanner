@@ -1,0 +1,94 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  api:
+    repository: tool-planner-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  web:
+    repository: tool-planner-web
+    tag: latest
+    pullPolicy: IfNotPresent
+
+replicaCount:
+  api: 2
+  web: 2
+
+service:
+  api:
+    port: 8000
+  web:
+    port: 8080
+
+web:
+  dnsResolver: ""
+
+ingress:
+  enabled: true
+  className: ""
+  host: tool-planner.example.invalid
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: tool-planner-tls
+
+application:
+  publicBaseUrl: https://tool-planner.example.invalid
+  timeZone: Europe/Brussels
+  sessionTtlHours: 12
+  cookieSecure: true
+
+secrets:
+  existingSecret: tool-planner-secrets
+  databaseUrlKey: database-url
+
+resources:
+  api:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  web:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+securityContext:
+  api:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  web:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+probes:
+  api:
+    readinessPath: /health/ready
+    livenessPath: /health/live
+
+migrations:
+  enabled: true
+  backoffLimit: 3
+
+retention:
+  enabled: true
+  schedule: "0 2 * * *"
+  timeZone: Europe/Brussels
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+
+reservationMaintenance:
+  enabled: true
+  schedule: "*/15 * * * *"
+  timeZone: Europe/Brussels

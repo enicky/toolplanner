@@ -27,7 +27,7 @@ owner through Helm configuration at deployment time.
 | Overdue reporting | Report loan age only until operations sets a threshold. | Do not label or escalate loans as overdue without an approved threshold. |
 | Corrections | Append audited corrections and preserve original values, actor, and reason. | No silent edits to loan history. |
 | Blocked status | Admins may set and clear a blocked/unavailable status with a reason. If a blocked elevator has an active loan, the loan must be cancelled. | Record an administrative cancellation with actor/time/reason; cancellation is not a physical return. Keep the borrower as custodian until actual return. Alert owners of affected future reservations on next login and suggest alternatives if available. |
-| Reporting access | Aggregate by default; all admins may view person-level history and export it. | User role receives aggregate/public operational views only; protect person-level details and exports as admin-only. |
+| Reporting access | Aggregate by default; all admins may view person-level history and export it. | Reports and person-level details are admin-only; protect exports with the same authorization. |
 | Hosting | Infrastructure will be provided by the product owner; do not use the company platform. | Deliver a Dockerfile for image creation and an environment-configurable Helm chart for Kubernetes deployment. |
 | Devices/time zone | Support phones and iPads; use Brussels/Europe time. | Use `Europe/Brussels` for display, scheduling, and reports; store instants in UTC. |
 | Browser support | Use modern mobile and desktop browsers. | Test current and previous major iOS/iPadOS Safari, Android Chrome, and desktop Chrome/Edge/Safari. |

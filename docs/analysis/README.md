@@ -1,7 +1,7 @@
 # Tool Planner: product and technical analysis
 
-**Status:** Analysis draft ready for review  
-**Implementation status:** Not started  
+**Status:** Product scope confirmed; implementation in progress
+**Implementation status:** Initial application foundation and core flows underway
 **Last reviewed:** 2026-11-15
 
 ## Purpose
@@ -16,6 +16,8 @@ inventory, locations, and QR codes, and review usage history and reports.
 This document is a proposal for discussion, not an approved specification.
 Decisions that affect identity, access, return behavior, and deployment are
 called out in [open questions](open-questions.md).
+Detailed API, database, security, and deployment design is in
+[solution-design.md](solution-design.md).
 
 ## At a glance
 

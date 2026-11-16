@@ -1,12 +1,12 @@
 # Tool Planner delivery roadmap
 
-**Overall status:** Product scope confirmed; implementation not started  
+**Overall status:** Phase 0 approved; Phase 1 design baseline accepted; Phase 2–5 implementation in progress
 **Tracking:** Check a task only when its completion evidence exists. Add a short
 note or link to a PR/test/deployment record when completing a phase.
 
 ## Phase 0 — Product decisions and requirements
 
-Status: **In progress — confirmed requirements recorded; rollout details remain**
+Status: **Complete — approved by product owner**
 
 - [x] Record initial product goals, roles, data, architecture, reporting ideas,
   and release criteria in [README.md](README.md).
@@ -36,100 +36,107 @@ Status: **In progress — confirmed requirements recorded; rollout details remai
 - [x] Confirm manual bootstrap script for at least two admins, environment-
   configurable Helm values, initial elevator `LIFT-001`, and cancellation of an
   active loan when its elevator is blocked.
-- [ ] Approve the first-release boundary and acceptance criteria.
+- [x] Approve Phase 0 requirements and first-release analysis.
 
-**Exit:** Requirements and open questions are approved by product owner,
-operations, and IT/security stakeholders.
+**Exit:** Product owner approved Phase 0 on 2026-11-15.
 
 ## Phase 1 — Solution design
 
-Status: **Not started**
+Status: **Design baseline accepted; implementation underway**
 
-- [ ] Define immediate checkout/return and future-reservation state machines,
+- [x] Define immediate checkout/return and future-reservation state machines,
   including pickup conversion, admin-configurable policies, and non-overlapping
   time windows even when an elevator has an active loan.
-- [ ] Review relational schema, constraints, indexes, and history correction
+- [x] Review relational schema, constraints, indexes, and history correction
   strategy.
-- [ ] Define API contract, error responses, pagination, filtering, and versioning.
-- [ ] Define local account fields, password hashing/reset, user/admin authorization,
+- [x] Define API contract, error responses, pagination, filtering, and versioning.
+- [x] Define local account fields, password hashing/reset, user/admin authorization,
   admin account bootstrap, forced first-login password change, and typed
   borrower-name/account-actor handling.
-- [ ] Specify the manually run script for creating at least two initial admin
+- [x] Specify the manually run script for creating at least two initial admin
   accounts without shipping default credentials.
-- [ ] Produce mobile QR, borrow, return, and manager-page interaction designs.
-- [ ] Define report semantics, Europe/Brussels time zone, filters, and the
+- [x] Produce mobile QR, borrow, return, and admin-page interaction designs.
+- [x] Define report semantics, Europe/Brussels time zone, filters, and the
   all-admin person-level history/CSV export policy.
-- [ ] Review threat model, privacy impact, and accessibility requirements.
-- [ ] Define Helm values/contracts for the product-owner-provided cluster,
+- [x] Review threat model, privacy impact, and accessibility requirements.
+- [x] Define Helm values/contracts for the product-owner-provided cluster,
   ingress, secrets, PostgreSQL connection, and backup/restore integration.
 
-**Exit:** Designs have been reviewed and the critical open questions are closed.
+**Exit:** Phase 1 design accepted as the implementation baseline on 2026-11-15.
 
 ## Phase 2 — Repository and developer foundation
 
-Status: **Not started**
+Status: **Foundation scaffold implemented; CI and checks remain**
 
-- [ ] Create the Python API project structure and pinned dependency management.
-- [ ] Create the React/TypeScript frontend and API contract integration.
-- [ ] Add PostgreSQL local development configuration and environment template
+- [x] Create the Python API project structure and dependency management.
+- [x] Create the React/TypeScript frontend and API integration.
+- [x] Add PostgreSQL local development configuration and environment template
   containing placeholders only.
 - [ ] Add formatting, linting, type checking, and test commands to CI.
-- [ ] Add local developer setup documentation and health checks.
-- [ ] Add safe sample/seed data for local development.
+- [x] Add local developer setup documentation and health checks.
+- [x] Add safe initial seed data for local development.
 
 **Exit:** A developer can start the app and database locally and run the
 automated checks from documented commands.
 
 ## Phase 3 — Backend domain and persistence
 
-Status: **Not started**
+Status: **Core flows implemented; concurrency, correction, and broader coverage remain**
 
-- [ ] Implement user, elevator, location, department, loan, reservation/settings,
+- [x] Implement user, elevator, location, department, loan, reservation/settings,
   and audit models.
-- [ ] Seed default location `Geel`, department `Sites & Facilities`, and
+- [x] Seed default location `Geel`, department `Sites & Facilities`, and
   elevator `LIFT-001`.
-- [ ] Implement the manually run initial-admin bootstrap script with secure
+- [x] Implement the manually run initial-admin bootstrap script with secure
   password entry, at least two admins, and forced password reset.
-- [ ] Add Alembic migrations, constraints, and indexes.
-- [ ] Implement transactional checkout and return services.
-- [ ] Implement reservation persistence and time-window conflict rules, including
+- [x] Add Alembic initial migration, constraints, and indexes.
+- [x] Implement transactional checkout and return services.
+- [x] Implement reservation persistence and time-window conflict rules, including
   the approved behavior when an elevator has an active loan.
-- [ ] Implement audited administrative cancellation of an active loan when its
+- [x] Implement audited administrative cancellation of an active loan when its
   elevator is blocked; retain borrower custody until actual return and prevent
   another checkout until custody is closed.
-- [ ] Link reservation pickup to a loan and test cancellation, expiry, and no-show
+- [x] Link reservation pickup to a loan and implement cancellation, expiry, and no-show
   behavior against approved rules.
-- [ ] Alert affected reservation owners after an admin blocks an elevator and
+- [x] Alert affected reservation owners after an admin blocks an elevator and
   suggest alternatives; show an unavailable alert if none are available.
-- [ ] Implement QR-token creation, lookup, and rotation.
-- [ ] Add inventory and loan APIs with input validation and explicit errors.
-- [ ] Add authorization and audit behavior for management operations.
-- [ ] Add admin APIs for user/password/role management, default location,
+- [x] Implement QR-token creation, lookup, rendering, and rotation.
+- [x] Add inventory and loan APIs with input validation and explicit errors.
+- [x] Add authorization and audit behavior for management operations.
+- [x] Add admin APIs for user/password/role management, default location,
   reservation settings, and blocked/unblocked status.
-- [ ] Add focused unit/integration tests, including competing checkout requests,
-  retries, invalid returns, cancelled-loan returns, blocked elevators, and
-  retired elevators.
+- [x] Add focused unit/API tests for checkout, return, reservation rules,
+  password changes, retention, and blocked-loan custody.
+- [ ] Add PostgreSQL concurrency tests, auditable correction endpoints, and
+  broader admin CRUD/report tests.
+- [ ] Expand coverage for retries, invalid returns, blocked elevators, and
+  retired elevators against PostgreSQL.
 
-**Exit:** API behavior is backed by PostgreSQL integration tests and preserves
-the one-outstanding-custody-record invariant under concurrency.
+**Exit:** API tests currently pass on SQLite. PostgreSQL-specific concurrency
+tests are still required before claiming the concurrency invariant verified.
 
 ## Phase 4 — User-facing application
 
-Status: **Not started**
+Status: **Core flows implemented; admin navigation redesign proposed for review**
 
-- [ ] Implement mobile elevator status and borrow pages.
-- [ ] Make immediate checkout the default and implement the future reservation
+- [x] Analyze the current all-in-one admin workspace and propose a sidebar with
+  separate management routes in [phase-4-admin-ia.md](phase-4-admin-ia.md).
+- [ ] Review and approve the admin navigation, page grouping, and overview/report
+  defaults before implementing the redesign.
+
+- [x] Implement mobile elevator status and borrow pages.
+- [x] Make immediate checkout the default and implement the future reservation
   flow with clear availability and conflict outcomes.
-- [ ] Implement return flow and conflict/validation messages.
-- [ ] Alert a reservation user when the loan is late at reservation time and
+- [x] Implement return flow and conflict/validation messages.
+- [x] Alert a reservation user when the loan is late at reservation time and
   suggest other elevators available for the requested period.
-- [ ] Implement user login and protected route behavior.
-- [ ] Implement admin user management, configurable reservation rules, and
+- [x] Implement user login and protected route behavior.
+- [x] Implement admin user management, configurable reservation rules, and
   blocked-status controls; restrict person-level history/exports to admins.
-- [ ] Require newly issued initial passwords to be changed at first login.
-- [ ] Implement inventory create/edit/retire/search flows.
-- [ ] Implement QR preview, download/print, and documented token rotation.
-- [ ] Implement active-loan and history reports with approved filters/export.
+- [x] Require newly issued initial passwords to be changed at first login.
+- [ ] Complete inventory edit/retire/search flows and location editing.
+- [x] Implement QR preview, download/print, and documented token rotation.
+- [ ] Complete active-loan and history reports with approved filters/export.
 - [ ] Enforce aggregate-by-default access and report age without an overdue
   label until an operations threshold is approved.
 - [ ] Add frontend tests for success, validation, unavailable, stale, and
@@ -142,18 +149,20 @@ criteria on supported mobile and desktop browsers.
 
 ## Phase 5 — Security, deployment, and operations
 
-Status: **Not started**
+Status: **Docker and Helm implemented and locally validated; production operations remain**
 
-- [ ] Add Dockerfile(s) and build production API/frontend images with non-root
+- [x] Add Dockerfile(s) and build API/frontend images with non-root
   defaults.
-- [ ] Create a Helm chart for Deployments, Services, Ingress, configuration,
+- [x] Create a Helm chart for Deployments, Services, Ingress, configuration,
   secrets, resource limits, probes, migrations, and the daily retention task.
-- [ ] Define secret injection and TLS configuration for the target environment.
-- [ ] Add a controlled database migration job and rollback/recovery guidance.
-- [ ] Implement and test the daily deletion job for completed loans,
+- [x] Define configurable secret references and TLS/ingress settings in Helm.
+- [x] Add a controlled database migration job.
+- [x] Implement and test the daily deletion job for completed loans,
   reservations, and personal data older than three years and audit events older
   than three years; remove disabled-account details after three years where no
   active loan or unfulfilled reservation requires them.
+- [x] Implement scheduled reservation no-show maintenance and late alerts.
+- [ ] Add rollback/recovery guidance and production secret provisioning.
 - [ ] Configure logs, metrics, alerting, rate limits, and operational dashboards.
 - [ ] Document backup schedule, restore test, disaster recovery, and backup
   retention; verify restored data is cleaned before application access.

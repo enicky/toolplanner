@@ -1,0 +1,4 @@
+if [ -z "${TOOLPLANNER_DNS_RESOLVER:-}" ]; then
+    TOOLPLANNER_DNS_RESOLVER="$(awk '$1 == "nameserver" { print $2; exit }' /etc/resolv.conf)"
+    export TOOLPLANNER_DNS_RESOLVER
+fi

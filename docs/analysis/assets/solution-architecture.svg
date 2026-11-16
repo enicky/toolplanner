@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="760" viewBox="0 0 1360 760" role="img" aria-labelledby="title description">
+  <title id="title">Tool Planner solution architecture</title>
+  <desc id="description">Phones, iPads, and admin desktops access a React frontend and Python FastAPI through HTTPS ingress. The API connects to PostgreSQL. Kubernetes runs migrations and daily retention, while a manually invoked command bootstraps administrators. Docker images and a configurable Helm chart are deployed to infrastructure provided by the product owner.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1">
+      <stop offset="0" stop-color="#392078"/>
+      <stop offset="1" stop-color="#7054d8"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#6a50c8"/>
+    </marker>
+    <marker id="dashArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9b8bd8"/>
+    </marker>
+    <style>
+      .title { font: 700 27px Arial, sans-serif; fill: #fff; }
+      .subtitle { font: 15px Arial, sans-serif; fill: #e9e3ff; }
+      .heading { font: 700 16px Arial, sans-serif; fill: #2e2157; }
+      .copy { font: 14px Arial, sans-serif; fill: #514a67; }
+      .small { font: 12px Arial, sans-serif; fill: #655d7b; }
+      .zone { fill: #f2effb; stroke: #ded7f4; stroke-width: 1.5; }
+      .card { fill: #fff; stroke: #d8d1ec; stroke-width: 1.5; }
+      .purple { fill: #f1edfc; stroke: #7259ca; stroke-width: 2; }
+      .blue { fill: #edf5fb; stroke: #4b85ae; stroke-width: 2; }
+      .green { fill: #edf7f3; stroke: #4c9a7c; stroke-width: 2; }
+      .gold { fill: #fbf5e8; stroke: #c99c42; stroke-width: 2; }
+      .flow { fill: none; stroke: #6a50c8; stroke-width: 3; marker-end: url(#arrow); }
+      .deploy { fill: none; stroke: #9b8bd8; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#dashArrow); }
+      .tag { font: 700 11px Arial, sans-serif; fill: #5a469f; letter-spacing: .5px; }
+    </style>
+  </defs>
+  <rect width="1360" height="760" rx="22" fill="#faf9fd"/>
+  <path d="M22 0 H1338 Q1360 0 1360 22 V122 H0 V22 Q0 0 22 0" fill="url(#header)"/>
+  <text x="48" y="52" class="title">Tool Planner | Solution architecture</text>
+  <text x="48" y="82" class="subtitle">A mobile-first app, secured API, and PostgreSQL—packaged for the supplied Kubernetes environment</text>
+
+  <rect x="34" y="151" width="286" height="416" rx="18" class="zone"/>
+  <text x="58" y="184" class="tag">PEOPLE &amp; CLIENTS</text>
+  <rect x="58" y="208" width="238" height="130" rx="14" class="card"/>
+  <circle cx="92" cy="248" r="18" fill="#eee9fb"/>
+  <path d="M86 246 h12 M92 240 v15 M84 260 q8 8 16 0" fill="none" stroke="#674bc2" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="124" y="244" class="heading">User devices</text>
+  <text x="124" y="269" class="copy">Phone / iPad</text>
+  <text x="76" y="309" class="small">Scan QR • borrow • reserve • return</text>
+  <rect x="58" y="360" width="238" height="130" rx="14" class="card"/>
+  <circle cx="92" cy="400" r="18" fill="#eee9fb"/>
+  <rect x="82" y="393" width="20" height="15" rx="2" fill="none" stroke="#674bc2" stroke-width="2"/>
+  <path d="M79 412 h26" stroke="#674bc2" stroke-width="2" stroke-linecap="round"/>
+  <text x="124" y="396" class="heading">Admin devices</text>
+  <text x="124" y="421" class="copy">Desktop / tablet</text>
+  <text x="76" y="461" class="small">Accounts • inventory • reports</text>
+  <text x="58" y="531" class="small">React + TypeScript web experience</text>
+
+  <rect x="372" y="231" width="210" height="130" rx="16" class="purple"/>
+  <text x="396" y="264" class="tag">HTTPS</text>
+  <text x="396" y="293" class="heading">Ingress / TLS</text>
+  <text x="396" y="321" class="copy">Provided infrastructure</text>
+  <text x="396" y="343" class="small">Configured through Helm values</text>
+
+  <rect x="632" y="157" width="246" height="144" rx="16" class="blue"/>
+  <text x="658" y="190" class="tag">WEB</text>
+  <text x="658" y="223" class="heading">React frontend</text>
+  <text x="658" y="251" class="copy">Responsive SPA</text>
+  <text x="658" y="276" class="small">Public status + signed-in flows</text>
+
+  <rect x="632" y="361" width="246" height="164" rx="16" class="purple"/>
+  <text x="658" y="394" class="tag">APPLICATION</text>
+  <text x="658" y="427" class="heading">Python / FastAPI</text>
+  <text x="658" y="455" class="copy">Auth • domain rules • REST API</text>
+  <text x="658" y="481" class="small">Loans • reservations • audit</text>
+  <text x="658" y="503" class="small">Authorization enforced server-side</text>
+
+  <rect x="930" y="309" width="252" height="171" rx="16" class="green"/>
+  <text x="956" y="342" class="tag">PERSISTENCE</text>
+  <text x="956" y="375" class="heading">PostgreSQL</text>
+  <text x="956" y="403" class="copy">Inventory • accounts</text>
+  <text x="956" y="427" class="copy">Loans • reservations • audit</text>
+  <text x="956" y="458" class="small">Private connection via supplied infra</text>
+
+  <rect x="632" y="570" width="246" height="126" rx="16" class="gold"/>
+  <text x="658" y="603" class="tag">KUBERNETES JOBS</text>
+  <text x="658" y="633" class="heading">Migrations + retention</text>
+  <text x="658" y="660" class="copy">Daily cleanup CronJob</text>
+  <text x="658" y="682" class="small">Manual admin bootstrap command</text>
+
+  <rect x="930" y="570" width="252" height="126" rx="16" class="card"/>
+  <text x="956" y="603" class="tag">DELIVERY</text>
+  <text x="956" y="633" class="heading">Docker + Helm</text>
+  <text x="956" y="660" class="copy">Configurable application release</text>
+  <text x="956" y="682" class="small">Owner supplies cluster + database</text>
+
+  <path d="M296 273 H364" class="flow"/>
+  <path d="M296 425 H340 V294 H364" class="flow"/>
+  <path d="M582 267 H607 V229 H624" class="flow"/>
+  <path d="M582 327 H607 V443 H624" class="flow"/>
+  <path d="M755 301 V353" class="flow"/>
+  <path d="M878 443 H922" class="flow"/>
+  <path d="M878 632 H908 V455 H922" class="flow"/>
+  <path d="M930 594 H900 V230 H886" class="deploy"/>
+  <path d="M930 648 H916 V500 H886" class="deploy"/>
+  <path d="M930 682 H886" class="deploy"/>
+  <path d="M930 422 H886" class="flow"/>
+
+  <rect x="1208" y="228" width="118" height="272" rx="16" fill="#fff" stroke="#e0d9f0" stroke-width="1.5"/>
+  <text x="1227" y="264" class="tag">KEY</text>
+  <path d="M1227 296 H1266" class="flow"/>
+  <text x="1227" y="322" class="small">Request / data</text>
+  <path d="M1227 355 H1266" class="deploy"/>
+  <text x="1227" y="381" class="small">Deployment</text>
+  <text x="1227" y="430" class="small">External</text>
+  <text x="1227" y="449" class="small">infrastructure</text>
+  <text x="1227" y="468" class="small">is supplied</text>
+
+  <text x="46" y="733" class="small">QR codes locate elevators; authenticated accounts authorize actions. No company platform or identity provider is assumed.</text>
+</svg>

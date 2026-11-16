@@ -1,0 +1,39 @@
+{{- if .Values.reservationMaintenance.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "tool-planner.fullname" . }}-reservation-maintenance
+  labels:
+    {{- include "tool-planner.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.reservationMaintenance.schedule | quote }}
+  timeZone: {{ .Values.reservationMaintenance.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/component: reservation-maintenance
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: reservation-maintenance
+              image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+              imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+              securityContext:
+                {{- toYaml .Values.securityContext.api | nindent 16 }}
+              command: ["python", "-m", "toolplanner.reservation_maintenance"]
+              env:
+                - name: TOOLPLANNER_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret }}
+                      key: {{ .Values.secrets.databaseUrlKey }}
+{{- end }}

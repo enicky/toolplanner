@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-toolplanner}
+      POSTGRES_USER: ${POSTGRES_USER:-toolplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      TOOLPLANNER_DATABASE_URL: ${TOOLPLANNER_DATABASE_URL:-postgresql+psycopg://toolplanner:local-development-only@postgres:5432/toolplanner}
+      TOOLPLANNER_PUBLIC_BASE_URL: ${TOOLPLANNER_PUBLIC_BASE_URL:-http://localhost:8080}
+      TOOLPLANNER_COOKIE_SECURE: ${TOOLPLANNER_COOKIE_SECURE:-false}
+      TOOLPLANNER_CORS_ORIGINS: ${TOOLPLANNER_CORS_ORIGINS:-["http://localhost:8080"]}
+    command: ["sh", "-c", "alembic upgrade head && uvicorn toolplanner.main:app --host 0.0.0.0 --port 8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      TOOLPLANNER_API_UPSTREAM: api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

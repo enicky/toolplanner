@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="1040" viewBox="0 0 1520 1040" role="img" aria-labelledby="title description">
+  <title id="title">Tool Planner core data model</title>
+  <desc id="description">Entity relationship diagram showing user accounts related to departments, loans, reservations, sessions, notifications, and audit events. Elevators relate to loans, reservations, and locations. Reservation policy versions are recorded with reservations.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1">
+      <stop offset="0" stop-color="#392078"/>
+      <stop offset="1" stop-color="#7054d8"/>
+    </linearGradient>
+    <marker id="rel" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#9382d2"/>
+    </marker>
+    <style>
+      .title { font: 700 27px Arial, sans-serif; fill: #fff; }
+      .subtitle { font: 15px Arial, sans-serif; fill: #e9e3ff; }
+      .entityTitle { font: 700 15px Arial, sans-serif; fill: #fff; }
+      .field { font: 13px Arial, sans-serif; fill: #403951; }
+      .key { font: 700 11px Arial, sans-serif; fill: #7054d8; }
+      .relLabel { font: 12px Arial, sans-serif; fill: #62568d; }
+      .entity { fill: #fff; stroke: #d8d1ec; stroke-width: 1.5; }
+      .headId { fill: #6146bd; }
+      .headOps { fill: #3d82a6; }
+      .headConfig { fill: #4b9279; }
+      .headAudit { fill: #b38835; }
+      .line { fill: none; stroke: #9382d2; stroke-width: 2; marker-end: url(#rel); }
+      .dashed { fill: none; stroke: #ad9edc; stroke-width: 1.7; stroke-dasharray: 6 5; marker-end: url(#rel); }
+      .legend { font: 12px Arial, sans-serif; fill: #655d7b; }
+    </style>
+  </defs>
+  <rect width="1520" height="1040" rx="22" fill="#faf9fd"/>
+  <path d="M22 0 H1498 Q1520 0 1520 22 V118 H0 V22 Q0 0 22 0" fill="url(#header)"/>
+  <text x="48" y="52" class="title">Tool Planner | Core data model</text>
+  <text x="48" y="82" class="subtitle">Stable IDs • auditable history • one outstanding custody record per elevator</text>
+
+  <!-- Relationships are drawn behind the entity cards. -->
+  <path d="M300 226 H350" class="line"/>
+  <text x="305" y="213" class="relLabel">1 : many</text>
+  <path d="M650 211 H720 V235 H790" class="line"/>
+  <text x="686" y="199" class="relLabel">requester</text>
+  <path d="M650 264 H700 V528 H790" class="line"/>
+  <text x="705" y="393" class="relLabel">checkout / return actor</text>
+  <path d="M300 594 H345 V537 H350" class="line"/>
+  <text x="304" y="579" class="relLabel">last known</text>
+  <path d="M650 510 H790" class="line"/>
+  <text x="690" y="496" class="relLabel">elevator</text>
+  <path d="M650 456 H720 V337 H790" class="line"/>
+  <text x="683" y="390" class="relLabel">elevator</text>
+  <path d="M1190 237 H1080" class="line"/>
+  <text x="1092" y="221" class="relLabel">policy version</text>
+  <path d="M650 222 H700 V829 H790" class="dashed"/>
+  <text x="675" y="816" class="relLabel">recipient</text>
+  <path d="M1080 321 H1125 V870 H1080" class="line"/>
+  <text x="1090" y="614" class="relLabel">reservation</text>
+  <path d="M1080 590 H1190" class="line"/>
+  <text x="1092" y="574" class="relLabel">entity audit</text>
+  <path d="M650 345 H740 V735 H1160 V551 H1190" class="dashed"/>
+  <text x="1112" y="727" class="relLabel">actor</text>
+  <path d="M350 330 H326 V901 H300" class="dashed"/>
+  <text x="306" y="884" class="relLabel">sessions</text>
+  <path d="M650 287 H700 V902 H790" class="dashed"/>
+  <text x="676" y="891" class="relLabel">recipient</text>
+  <path d="M650 345 H740 V965 H1150 V900 H1190" class="dashed"/>
+  <text x="1035" y="958" class="relLabel">request owner / key</text>
+
+  <!-- Identity entities -->
+  <g>
+    <rect x="50" y="150" width="250" height="170" rx="12" class="entity"/>
+    <path d="M62 150 H288 Q300 150 300 162 V190 H50 V162 Q50 150 62 150" class="headId"/>
+    <text x="70" y="176" class="entityTitle">department</text>
+    <text x="68" y="216" class="key">PK</text><text x="102" y="216" class="field">id</text>
+    <text x="68" y="242" class="key">UQ</text><text x="102" y="242" class="field">name</text>
+    <text x="68" y="268" class="field">is_active</text>
+    <text x="68" y="294" class="field">created_at</text>
+  </g>
+  <g>
+    <rect x="350" y="135" width="300" height="225" rx="12" class="entity"/>
+    <path d="M362 135 H638 Q650 135 650 147 V175 H350 V147 Q350 135 362 135" class="headId"/>
+    <text x="370" y="161" class="entityTitle">user_account</text>
+    <text x="368" y="201" class="key">PK</text><text x="402" y="201" class="field">id</text>
+    <text x="368" y="227" class="key">UQ</text><text x="402" y="227" class="field">username_normalized</text>
+    <text x="368" y="253" class="field">password_hash • role</text>
+    <text x="368" y="279" class="field">display_name • department_id FK</text>
+    <text x="368" y="305" class="field">must_change_password • is_active</text>
+    <text x="368" y="331" class="field">disabled_at • last_login_at</text>
+  </g>
+  <g>
+    <rect x="50" y="520" width="250" height="150" rx="12" class="entity"/>
+    <path d="M62 520 H288 Q300 520 300 532 V560 H50 V532 Q50 520 62 520" class="headConfig"/>
+    <text x="70" y="546" class="entityTitle">location</text>
+    <text x="68" y="586" class="key">PK</text><text x="102" y="586" class="field">id</text>
+    <text x="68" y="612" class="field">name • area • is_active</text>
+    <text x="68" y="638" class="field">is_default (one active)</text>
+  </g>
+  <g>
+    <rect x="50" y="830" width="250" height="140" rx="12" class="entity"/>
+    <path d="M62 830 H288 Q300 830 300 842 V870 H50 V842 Q50 830 62 830" class="headId"/>
+    <text x="70" y="856" class="entityTitle">user_session</text>
+    <text x="68" y="896" class="key">PK</text><text x="102" y="896" class="field">id • user_id FK</text>
+    <text x="68" y="922" class="field">expires_at • revoked_at</text>
+    <text x="68" y="948" class="field">session_id_hash</text>
+  </g>
+
+  <!-- Inventory and transaction entities -->
+  <g>
+    <rect x="350" y="420" width="300" height="225" rx="12" class="entity"/>
+    <path d="M362 420 H638 Q650 420 650 432 V460 H350 V432 Q350 420 362 420" class="headOps"/>
+    <text x="370" y="446" class="entityTitle">elevator</text>
+    <text x="368" y="486" class="key">PK</text><text x="402" y="486" class="field">id</text>
+    <text x="368" y="512" class="key">UQ</text><text x="402" y="512" class="field">registration_number</text>
+    <text x="368" y="538" class="field">name • status • block_reason</text>
+    <text x="368" y="564" class="field">qr_token • last_known_location_id FK</text>
+    <text x="368" y="590" class="field">created_at • updated_at</text>
+    <text x="368" y="620" class="key">RULE</text><text x="412" y="620" class="field">one open custody record</text>
+  </g>
+  <g>
+    <rect x="790" y="135" width="290" height="225" rx="12" class="entity"/>
+    <path d="M802 135 H1068 Q1080 135 1080 147 V175 H790 V147 Q790 135 802 135" class="headOps"/>
+    <text x="810" y="161" class="entityTitle">reservation</text>
+    <text x="808" y="201" class="key">PK</text><text x="842" y="201" class="field">id</text>
+    <text x="808" y="227" class="field">elevator_id • requester_user_id FKs</text>
+    <text x="808" y="253" class="field">start_at • end_at ([start,end))</text>
+    <text x="808" y="279" class="field">status • policy_version</text>
+    <text x="808" y="305" class="field">cancelled_at • expired_at</text>
+    <text x="808" y="331" class="field">loan_id FK • created_at</text>
+  </g>
+  <g>
+    <rect x="1190" y="150" width="280" height="185" rx="12" class="entity"/>
+    <path d="M1202 150 H1458 Q1470 150 1470 162 V190 H1190 V162 Q1190 150 1202 150" class="headConfig"/>
+    <text x="1210" y="176" class="entityTitle">reservation_policy</text>
+    <text x="1208" y="216" class="key">PK</text><text x="1242" y="216" class="field">version</text>
+    <text x="1208" y="242" class="field">minimum_notice</text>
+    <text x="1208" y="268" class="field">maximum_duration</text>
+    <text x="1208" y="294" class="field">cancel_cutoff • no_show_grace</text>
+  </g>
+  <g>
+    <rect x="790" y="440" width="290" height="265" rx="12" class="entity"/>
+    <path d="M802 440 H1068 Q1080 440 1080 452 V480 H790 V452 Q790 440 802 440" class="headOps"/>
+    <text x="810" y="466" class="entityTitle">loan</text>
+    <text x="808" y="506" class="key">PK</text><text x="842" y="506" class="field">id</text>
+    <text x="808" y="532" class="field">elevator_id • actor_user_id FKs</text>
+    <text x="808" y="558" class="field">borrower_name • dept_snapshot</text>
+    <text x="808" y="584" class="field">checkout / destination location</text>
+    <text x="808" y="610" class="field">checked_out_at • returned_at</text>
+    <text x="808" y="636" class="field">return_actor • return_location</text>
+    <text x="808" y="662" class="field">status • cancelled_by • reason</text>
+    <text x="808" y="688" class="key">RULE</text><text x="852" y="688" class="field">cancelled stays in custody</text>
+  </g>
+  <g>
+    <rect x="1190" y="455" width="280" height="185" rx="12" class="entity"/>
+    <path d="M1202 455 H1458 Q1470 455 1470 467 V495 H1190 V467 Q1190 455 1202 455" class="headAudit"/>
+    <text x="1210" y="481" class="entityTitle">audit_event</text>
+    <text x="1208" y="521" class="key">PK</text><text x="1242" y="521" class="field">id</text>
+    <text x="1208" y="547" class="field">actor_user_id • entity_type/id</text>
+    <text x="1208" y="573" class="field">action • occurred_at • outcome</text>
+    <text x="1208" y="599" class="field">reason • minimal before/after</text>
+    <text x="1208" y="625" class="field">retention: three years</text>
+  </g>
+  <g>
+    <rect x="790" y="790" width="290" height="155" rx="12" class="entity"/>
+    <path d="M802 790 H1068 Q1080 790 1080 802 V830 H790 V802 Q790 790 802 790" class="headConfig"/>
+    <text x="810" y="816" class="entityTitle">user_notification</text>
+    <text x="808" y="856" class="key">PK</text><text x="842" y="856" class="field">id</text>
+    <text x="808" y="882" class="field">recipient_user_id • reservation_id</text>
+    <text x="808" y="908" class="field">type • created_at • read_at • dedupe_key</text>
+  </g>
+  <g>
+    <rect x="1190" y="760" width="280" height="155" rx="12" class="entity"/>
+    <path d="M1202 760 H1458 Q1470 760 1470 772 V800 H1190 V772 Q1190 760 1202 760" class="headAudit"/>
+    <text x="1210" y="786" class="entityTitle">idempotency_record</text>
+    <text x="1208" y="826" class="key">PK</text><text x="1242" y="826" class="field">id</text>
+    <text x="1208" y="852" class="field">user_id • request_key</text>
+    <text x="1208" y="878" class="field">operation • result_ref • expires_at</text>
+    <text x="1208" y="904" class="field">unique per user/operation/key</text>
+  </g>
+
+  <rect x="50" y="990" width="1420" height="30" rx="9" fill="#f1edfc"/>
+  <circle cx="72" cy="1005" r="6" fill="#6146bd"/><text x="86" y="1009" class="legend">Identity</text>
+  <circle cx="176" cy="1005" r="6" fill="#3d82a6"/><text x="190" y="1009" class="legend">Operational</text>
+  <circle cx="300" cy="1005" r="6" fill="#4b9279"/><text x="314" y="1009" class="legend">Configuration / notifications</text>
+  <circle cx="535" cy="1005" r="6" fill="#b38835"/><text x="549" y="1009" class="legend">Audit / reliability</text>
+  <text x="920" y="1009" class="legend">FK = foreign key • UQ = unique • PK = primary key</text>
+</svg>
