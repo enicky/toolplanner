@@ -6,33 +6,43 @@ See [the product analysis](docs/analysis/README.md) and [solution design](docs/a
 
 ## Local development
 
-Requirements: Python 3.12+, Node.js 22+, Docker, and `docker-compose`.
+Requirements: Python 3.12+, `uv`, Node.js 22+, npm, Docker, and `docker-compose`.
 
-1. Copy `.env.example` to `.env` and use a local-only development password.
-2. Start the stack:
+1. Start Docker Desktop.
+2. Start PostgreSQL in Docker and the API/frontend as local processes:
 
    ```sh
-   docker-compose up --build -d
+   ./scripts/start-local.sh
    ```
 
+   The script copies `.env.example` to `.env` only when needed, starts only the
+   PostgreSQL container, syncs locked Python/Node dependencies, applies
+   migrations, and launches Uvicorn and Vite locally. It waits for the API and
+   frontend to be ready. Uvicorn reloads the API when backend source files
+   change. PostgreSQL is published on `127.0.0.1:5433` by
+   default; change `LOCAL_POSTGRES_PORT` in `.env` if that port is in use. The
+   included database password is only for local development.
 3. Create two administrator accounts interactively. Password prompts do not
    echo; both accounts must change their initial password on first login:
 
    ```sh
-   docker-compose run --rm api python -m toolplanner.bootstrap_admin --count 2
+   ./scripts/create-local-admins.sh
    ```
 
-4. Open `http://localhost:8080`. The initial location is `Geel`, department is
+4. Open `http://127.0.0.1:5173`. The initial location is `Geel`, department is
    `Sites & Facilities`, and the first elevator is `LIFT-001`.
-5. To stop the local services without removing the persistent database volume:
+5. To stop the local API, frontend, and PostgreSQL without removing database
+   data:
 
    ```sh
-   docker-compose down
+   ./scripts/stop-local.sh
    ```
 
-The local database password is only a development default. Do not use it for a
+The Compose file retains API/web container definitions for image and deployment
+smoke tests; the local start script does not build or run those images. The
+local database password is only a development default. Do not use it for a
 deployed environment. Production secrets and the PostgreSQL URL are supplied
-through the environment/Helm secret reference.
+through the Helm secret reference.
 
 ## Backend tests
 
@@ -56,18 +66,21 @@ npm run build
 
 ## Database migrations and maintenance
 
-The API container runs Alembic migrations during local startup. For a manually
-run migration:
+The local start script runs Alembic migrations before starting the API. For a
+manually run migration while the local stack is up:
 
 ```sh
-docker-compose run --rm api alembic upgrade head
+cd backend
+TOOLPLANNER_DATABASE_URL="$(cat ../.local/database-url)" uv run --frozen alembic upgrade head
 ```
 
 The three-year retention job runs daily in Helm. After restoring a backup, run
-retention cleanup before making the application available:
+retention cleanup before making the application available (with the local
+stack running):
 
 ```sh
-docker-compose run --rm api python -m toolplanner.retention
+cd backend
+TOOLPLANNER_DATABASE_URL="$(cat ../.local/database-url)" uv run --frozen python -m toolplanner.retention
 ```
 
 No default admin credentials are included in source or container images.

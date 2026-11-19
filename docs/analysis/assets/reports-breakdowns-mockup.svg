@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1010" viewBox="0 0 1500 1010" role="img" aria-labelledby="title description">
+  <title id="title">Proposed Tool Planner report breakdowns</title>
+  <desc id="description">A desktop reports concept showing aggregate elevator usage, loan activity by department and checkout location, and completed-loan duration ranges. Sample values are illustrative.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #30284a; }
+      .small { font-size: 12px; fill: #777184; }
+      .label { font-size: 13px; fill: #706a7e; }
+      .body { font-size: 14px; fill: #514a61; }
+      .bold { font-weight: 700; }
+      .purple { fill: #4b328e; }
+      .white { fill: #fff; }
+      .card { fill: #fff; stroke: #e8e4ef; }
+    </style>
+  </defs>
+  <rect width="1500" height="1010" fill="#f7f6fb"/>
+  <rect width="1500" height="72" fill="#fff"/>
+  <path d="M0 71.5H1500" stroke="#e8e4ef"/>
+  <rect x="28" y="18" width="36" height="36" rx="11" fill="#4b328e"/>
+  <text x="46" y="42" text-anchor="middle" class="white bold" font-size="18">T</text>
+  <text x="76" y="41" class="bold" font-size="17">Tool Planner</text>
+  <rect x="1290" y="22" width="86" height="28" rx="14" fill="#f0ecfa"/>
+  <text x="1333" y="41" text-anchor="middle" class="purple bold" font-size="12">GEEL SITE</text>
+  <circle cx="1412" cy="36" r="16" fill="#eee9fb"/>
+  <text x="1412" y="41" text-anchor="middle" class="purple bold" font-size="12">AD</text>
+  <text x="1438" y="40" class="label">Admin</text>
+
+  <rect x="0" y="72" width="238" height="938" fill="#fff"/>
+  <path d="M237.5 72V1010" stroke="#e8e4ef"/>
+  <rect x="18" y="94" width="34" height="34" rx="10" fill="#4b328e"/>
+  <text x="35" y="116" text-anchor="middle" class="white bold" font-size="16">T</text>
+  <text x="62" y="108" class="bold" font-size="13">TOOL PLANNER</text>
+  <text x="62" y="124" class="small">Site administration</text>
+  <text x="24" y="165" class="small bold" letter-spacing="1.1">WORKSPACE</text>
+  <text x="50" y="202" class="body">Overview</text>
+  <text x="50" y="244" class="body">Inventory</text>
+  <text x="50" y="286" class="body">Current loans</text>
+  <text x="50" y="328" class="body">Reservations</text>
+  <text x="24" y="378" class="small bold" letter-spacing="1.1">ADMINISTRATION</text>
+  <text x="50" y="416" class="body">Users</text>
+  <text x="50" y="458" class="body">Locations &amp; departments</text>
+  <text x="50" y="500" class="body">Reservation rules</text>
+  <rect x="12" y="520" width="214" height="40" rx="9" fill="#f0ecfa"/>
+  <rect x="24" y="536" width="8" height="8" rx="3" fill="#5c40ac"/>
+  <text x="50" y="546" class="purple bold" font-size="14">Reports</text>
+  <text x="24" y="594" class="small bold" letter-spacing="1.1">ACTIVITY</text>
+  <text x="50" y="632" class="body">Audit activity</text>
+  <path d="M18 948H220" stroke="#eeebf3"/>
+  <circle cx="40" cy="974" r="16" fill="#eee9fb"/>
+  <text x="40" y="979" text-anchor="middle" class="purple bold" font-size="12">AD</text>
+  <text x="64" y="971" class="bold" font-size="12">Administrator</text>
+  <text x="64" y="987" class="small">Admin account</text>
+
+  <text x="270" y="112" class="purple bold" font-size="11" letter-spacing="1.4">USAGE BREAKDOWNS</text>
+  <text x="270" y="148" class="bold" font-size="31">Where is demand coming from?</text>
+  <text x="270" y="174" class="label">Use the same date and filters to compare elevator, department and location activity.</text>
+  <rect x="1160" y="104" width="280" height="34" rx="8" fill="#fff5e3" stroke="#f0dfb8"/>
+  <text x="1300" y="126" text-anchor="middle" font-size="12" fill="#765716">DESIGN CONCEPT · SAMPLE VALUES</text>
+
+  <rect x="270" y="196" width="1170" height="62" rx="13" class="card"/>
+  <text x="290" y="219" class="small bold">DATE RANGE</text>
+  <rect x="290" y="226" width="145" height="26" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="304" y="244" class="body">Last 30 days</text>
+  <text x="458" y="219" class="small bold">ELEVATOR</text>
+  <rect x="458" y="226" width="150" height="26" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="472" y="244" class="body">All elevators</text>
+  <text x="630" y="219" class="small bold">DEPARTMENT</text>
+  <rect x="630" y="226" width="180" height="26" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="644" y="244" class="body">All departments</text>
+  <text x="832" y="219" class="small bold">CHECKOUT LOCATION</text>
+  <rect x="832" y="226" width="152" height="26" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="846" y="244" class="body">All locations</text>
+  <text x="1396" y="244" text-anchor="end" class="purple bold" font-size="12">82 CHECKOUTS</text>
+
+  <rect x="270" y="280" width="560" height="314" rx="14" class="card"/>
+  <text x="294" y="315" class="bold" font-size="17">Elevator usage</text>
+  <text x="294" y="337" class="small">Top five elevators · 72 of 82 checkouts</text>
+  <text x="294" y="382" class="body bold">LIFT-003</text>
+  <rect x="394" y="368" width="330" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="394" y="368" width="300" height="16" rx="8" fill="#6045a8"/>
+  <text x="750" y="382" class="body bold">21</text>
+  <text x="294" y="426" class="body bold">LIFT-001</text>
+  <rect x="394" y="412" width="330" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="394" y="412" width="271" height="16" rx="8" fill="#7960ba"/>
+  <text x="750" y="426" class="body bold">19</text>
+  <text x="294" y="470" class="body bold">LIFT-007</text>
+  <rect x="394" y="456" width="330" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="394" y="456" width="214" height="16" rx="8" fill="#927bd0"/>
+  <text x="750" y="470" class="body bold">15</text>
+  <text x="294" y="514" class="body bold">LIFT-002</text>
+  <rect x="394" y="500" width="330" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="394" y="500" width="171" height="16" rx="8" fill="#ac9bd9"/>
+  <text x="750" y="514" class="body bold">12</text>
+  <text x="294" y="558" class="body bold">LIFT-004</text>
+  <rect x="394" y="544" width="330" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="394" y="544" width="71" height="16" rx="8" fill="#c0b5df"/>
+  <text x="750" y="558" class="body bold">5</text>
+  <text x="294" y="579" class="small">A low count signals lower observed use, not a maintenance issue.</text>
+
+  <rect x="848" y="280" width="592" height="314" rx="14" class="card"/>
+  <text x="872" y="315" class="bold" font-size="17">Checkout activity by department</text>
+  <text x="872" y="337" class="small">Uses the department snapshot recorded at checkout</text>
+  <text x="872" y="385" class="body">Sites &amp; Facilities</text>
+  <rect x="1045" y="371" width="300" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="1045" y="371" width="300" height="16" rx="8" fill="#6045a8"/>
+  <text x="1374" y="385" text-anchor="end" class="body bold">28</text>
+  <text x="872" y="430" class="body">Manufacturing</text>
+  <rect x="1045" y="416" width="300" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="1045" y="416" width="214" height="16" rx="8" fill="#8068c3"/>
+  <text x="1374" y="430" text-anchor="end" class="body bold">20</text>
+  <text x="872" y="475" class="body">Quality</text>
+  <rect x="1045" y="461" width="300" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="1045" y="461" width="182" height="16" rx="8" fill="#9b87d2"/>
+  <text x="1374" y="475" text-anchor="end" class="body bold">17</text>
+  <text x="872" y="520" class="body">Other</text>
+  <rect x="1045" y="506" width="300" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="1045" y="506" width="182" height="16" rx="8" fill="#b4a7de"/>
+  <text x="1374" y="520" text-anchor="end" class="body bold">17</text>
+  <text x="872" y="566" class="small">Aggregate only; no borrower names or account-level ranking.</text>
+
+  <rect x="270" y="614" width="560" height="326" rx="14" class="card"/>
+  <text x="294" y="649" class="bold" font-size="17">Checkout location</text>
+  <text x="294" y="671" class="small">Physical pickup location recorded on the loan</text>
+  <text x="294" y="718" class="body">Geel</text>
+  <rect x="390" y="704" width="310" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="390" y="704" width="300" height="17" rx="8" fill="#6045a8"/>
+  <text x="724" y="718" class="body bold">64</text>
+  <text x="294" y="765" class="body">Annex</text>
+  <rect x="390" y="751" width="310" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="390" y="751" width="57" height="17" rx="8" fill="#927bd0"/>
+  <text x="724" y="765" class="body bold">12</text>
+  <text x="294" y="812" class="body">Other / not recorded</text>
+  <rect x="444" y="798" width="256" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="444" y="798" width="26" height="17" rx="8" fill="#b4a7de"/>
+  <text x="724" y="812" class="body bold">6</text>
+  <rect x="294" y="850" width="484" height="58" rx="9" fill="#f7f4ff"/>
+  <text x="310" y="875" class="purple bold" font-size="12">INTERPRETATION</text>
+  <text x="310" y="895" class="small">This is pickup origin, not current elevator location or destination.</text>
+
+  <rect x="848" y="614" width="592" height="326" rx="14" class="card"/>
+  <text x="872" y="649" class="bold" font-size="17">Completed loan duration</text>
+  <text x="872" y="671" class="small">Returned loans checked out in range · 78 completed</text>
+  <text x="872" y="718" class="body">Under 1 day</text>
+  <rect x="1008" y="704" width="305" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="1008" y="704" width="245" height="17" rx="8" fill="#6045a8"/>
+  <text x="1332" y="718" class="body bold">32</text>
+  <text x="872" y="765" class="body">1 to 3 days</text>
+  <rect x="1008" y="751" width="305" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="1008" y="751" width="190" height="17" rx="8" fill="#8068c3"/>
+  <text x="1332" y="765" class="body bold">25</text>
+  <text x="872" y="812" class="body">3 to 7 days</text>
+  <rect x="1008" y="798" width="305" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="1008" y="798" width="115" height="17" rx="8" fill="#9b87d2"/>
+  <text x="1332" y="812" class="body bold">15</text>
+  <text x="872" y="859" class="body">7 days or more</text>
+  <rect x="1008" y="845" width="305" height="17" rx="8" fill="#eeeaf5"/>
+  <rect x="1008" y="845" width="46" height="17" rx="8" fill="#b4a7de"/>
+  <text x="1332" y="859" class="body bold">6</text>
+  <rect x="872" y="883" width="520" height="32" rx="8" fill="#fff9e9"/>
+  <text x="886" y="904" font-size="12" fill="#765716">Duration ranges describe history only; they are not an overdue policy.</text>
+</svg>

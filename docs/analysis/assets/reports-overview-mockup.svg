@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1010" viewBox="0 0 1500 1010" role="img" aria-labelledby="title description">
+  <title id="title">Proposed Tool Planner reports overview</title>
+  <desc id="description">A desktop dashboard concept with date filters, four aggregate metric cards, a checkout trend, elevator usage ranking, custody age bands, and reservation outcomes. All values are illustrative.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #30284a; }
+      .small { font-size: 12px; fill: #777184; }
+      .label { font-size: 13px; fill: #706a7e; }
+      .body { font-size: 14px; fill: #514a61; }
+      .bold { font-weight: 700; }
+      .purple { fill: #4b328e; }
+      .white { fill: #fff; }
+      .card { fill: #fff; stroke: #e8e4ef; }
+      .grid { stroke: #eeeaf4; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect width="1500" height="1010" fill="#f7f6fb"/>
+  <rect width="1500" height="72" fill="#fff"/>
+  <path d="M0 71.5H1500" stroke="#e8e4ef"/>
+  <rect x="28" y="18" width="36" height="36" rx="11" fill="#4b328e"/>
+  <text x="46" y="42" text-anchor="middle" class="white bold" font-size="18">T</text>
+  <text x="76" y="41" class="bold" font-size="17">Tool Planner</text>
+  <rect x="1290" y="22" width="86" height="28" rx="14" fill="#f0ecfa"/>
+  <text x="1333" y="41" text-anchor="middle" class="purple bold" font-size="12">GEEL SITE</text>
+  <circle cx="1412" cy="36" r="16" fill="#eee9fb"/>
+  <text x="1412" y="41" text-anchor="middle" class="purple bold" font-size="12">AD</text>
+  <text x="1438" y="40" class="label">Admin</text>
+
+  <rect x="0" y="72" width="238" height="938" fill="#fff"/>
+  <path d="M237.5 72V1010" stroke="#e8e4ef"/>
+  <rect x="18" y="94" width="34" height="34" rx="10" fill="#4b328e"/>
+  <text x="35" y="116" text-anchor="middle" class="white bold" font-size="16">T</text>
+  <text x="62" y="108" class="bold" font-size="13">TOOL PLANNER</text>
+  <text x="62" y="124" class="small">Site administration</text>
+  <text x="24" y="165" class="small bold" letter-spacing="1.1">WORKSPACE</text>
+  <text x="50" y="202" class="body">Overview</text>
+  <text x="50" y="244" class="body">Inventory</text>
+  <text x="50" y="286" class="body">Current loans</text>
+  <text x="50" y="328" class="body">Reservations</text>
+  <text x="24" y="378" class="small bold" letter-spacing="1.1">ADMINISTRATION</text>
+  <text x="50" y="416" class="body">Users</text>
+  <text x="50" y="458" class="body">Locations &amp; departments</text>
+  <text x="50" y="500" class="body">Reservation rules</text>
+  <rect x="12" y="520" width="214" height="40" rx="9" fill="#f0ecfa"/>
+  <rect x="24" y="536" width="8" height="8" rx="3" fill="#5c40ac"/>
+  <text x="50" y="546" class="purple bold" font-size="14">Reports</text>
+  <text x="24" y="594" class="small bold" letter-spacing="1.1">ACTIVITY</text>
+  <text x="50" y="632" class="body">Audit activity</text>
+  <path d="M18 948H220" stroke="#eeebf3"/>
+  <circle cx="40" cy="974" r="16" fill="#eee9fb"/>
+  <text x="40" y="979" text-anchor="middle" class="purple bold" font-size="12">AD</text>
+  <text x="64" y="971" class="bold" font-size="12">Administrator</text>
+  <text x="64" y="987" class="small">Admin account</text>
+
+  <text x="270" y="112" class="purple bold" font-size="11" letter-spacing="1.4">INSIGHTS</text>
+  <text x="270" y="148" class="bold" font-size="31">Reports &amp; insights</text>
+  <text x="270" y="174" class="label">Aggregate activity across elevators, loans and reservations.</text>
+  <rect x="1160" y="104" width="280" height="34" rx="8" fill="#fff5e3" stroke="#f0dfb8"/>
+  <text x="1300" y="126" text-anchor="middle" font-size="12" fill="#765716">DESIGN CONCEPT · SAMPLE VALUES</text>
+
+  <rect x="270" y="196" width="1170" height="72" rx="13" class="card"/>
+  <text x="290" y="219" class="small bold">DATE RANGE</text>
+  <rect x="290" y="228" width="145" height="28" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="304" y="247" class="body">Last 30 days</text>
+  <path d="M416 239l5 5 5-5" fill="none" stroke="#6b6478" stroke-width="1.5"/>
+  <text x="458" y="219" class="small bold">ELEVATOR</text>
+  <rect x="458" y="228" width="150" height="28" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="472" y="247" class="body">All elevators</text>
+  <path d="M588 239l5 5 5-5" fill="none" stroke="#6b6478" stroke-width="1.5"/>
+  <text x="630" y="219" class="small bold">DEPARTMENT</text>
+  <rect x="630" y="228" width="180" height="28" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="644" y="247" class="body">All departments</text>
+  <path d="M790 239l5 5 5-5" fill="none" stroke="#6b6478" stroke-width="1.5"/>
+  <text x="832" y="219" class="small bold">CHECKOUT LOCATION</text>
+  <rect x="832" y="228" width="152" height="28" rx="7" fill="#f7f6fb" stroke="#e1ddea"/>
+  <text x="846" y="247" class="body">All locations</text>
+  <path d="M964 239l5 5 5-5" fill="none" stroke="#6b6478" stroke-width="1.5"/>
+  <rect x="1257" y="221" width="163" height="38" rx="9" fill="#4b328e"/>
+  <text x="1338" y="245" text-anchor="middle" class="white bold" font-size="13">Export filtered CSV</text>
+
+  <g>
+    <rect x="270" y="286" width="280" height="112" rx="14" class="card"/>
+    <text x="290" y="313" class="label">Checkouts in range</text>
+    <text x="290" y="355" class="bold" font-size="32">82</text>
+    <text x="290" y="379" font-size="12" fill="#28714f">+12% vs previous 30 days</text>
+    <rect x="564" y="286" width="280" height="112" rx="14" class="card"/>
+    <text x="584" y="313" class="label">Average returned loan</text>
+    <text x="584" y="355" class="bold" font-size="32">1d 6h</text>
+    <text x="584" y="379" class="small">Returned loans checked out in range</text>
+    <rect x="858" y="286" width="280" height="112" rx="14" class="card"/>
+    <text x="878" y="313" class="label">Currently in custody</text>
+    <text x="878" y="355" class="bold" font-size="32">4</text>
+    <text x="878" y="379" class="small">Live count · includes cancelled, unreturned</text>
+    <rect x="1152" y="286" width="288" height="112" rx="14" class="card"/>
+    <text x="1172" y="313" class="label">Reservation pickup rate</text>
+    <text x="1172" y="355" class="bold" font-size="32">89%</text>
+    <text x="1172" y="379" class="small">16 picked up of 18 resolved · cancels excluded</text>
+  </g>
+
+  <rect x="270" y="416" width="708" height="296" rx="14" class="card"/>
+  <text x="294" y="449" class="bold" font-size="17">Checkout activity</text>
+  <text x="294" y="470" class="small">Checkouts by week · local site time (Europe/Brussels)</text>
+  <rect x="786" y="431" width="104" height="26" rx="8" fill="#f2f0f7"/>
+  <text x="812" y="449" text-anchor="middle" class="small">Day</text>
+  <rect x="839" y="434" width="47" height="20" rx="6" fill="#fff"/>
+  <text x="862" y="449" text-anchor="middle" class="purple bold" font-size="11">Week</text>
+  <text x="925" y="449" text-anchor="end" class="purple bold" font-size="12">82 TOTAL</text>
+  <path d="M324 510H944M324 552H944M324 594H944M324 636H944" class="grid"/>
+  <text x="312" y="514" text-anchor="end" class="small">30</text>
+  <text x="312" y="556" text-anchor="end" class="small">20</text>
+  <text x="312" y="598" text-anchor="end" class="small">10</text>
+  <text x="312" y="640" text-anchor="end" class="small">0</text>
+  <rect x="366" y="585" width="62" height="51" rx="5" fill="#c6b8ee"/>
+  <rect x="478" y="568" width="62" height="68" rx="5" fill="#ac98e2"/>
+  <rect x="590" y="560" width="62" height="76" rx="5" fill="#9277d5"/>
+  <rect x="702" y="577" width="62" height="59" rx="5" fill="#ac98e2"/>
+  <rect x="814" y="543" width="62" height="93" rx="5" fill="#6246ad"/>
+  <text x="397" y="658" text-anchor="middle" class="small">Oct 19</text>
+  <text x="509" y="658" text-anchor="middle" class="small">Oct 26</text>
+  <text x="621" y="658" text-anchor="middle" class="small">Nov 03</text>
+  <text x="733" y="658" text-anchor="middle" class="small">Nov 09</text>
+  <text x="845" y="658" text-anchor="middle" class="small">Nov 16</text>
+  <text x="397" y="575" text-anchor="middle" class="small bold">12</text>
+  <text x="509" y="558" text-anchor="middle" class="small bold">16</text>
+  <text x="621" y="550" text-anchor="middle" class="small bold">18</text>
+  <text x="733" y="567" text-anchor="middle" class="small bold">14</text>
+  <text x="845" y="533" text-anchor="middle" class="small bold">22</text>
+
+  <rect x="996" y="416" width="444" height="296" rx="14" class="card"/>
+  <text x="1020" y="449" class="bold" font-size="17">Most used elevators</text>
+  <text x="1020" y="470" class="small">Checkout count in selected period</text>
+  <text x="1020" y="511" class="body bold">LIFT-003</text>
+  <rect x="1112" y="497" width="230" height="14" rx="7" fill="#eeeaf5"/>
+  <rect x="1112" y="497" width="210" height="14" rx="7" fill="#684cb2"/>
+  <text x="1363" y="510" text-anchor="end" class="body bold">21</text>
+  <text x="1020" y="552" class="body bold">LIFT-001</text>
+  <rect x="1112" y="538" width="230" height="14" rx="7" fill="#eeeaf5"/>
+  <rect x="1112" y="538" width="190" height="14" rx="7" fill="#8068c3"/>
+  <text x="1363" y="551" text-anchor="end" class="body bold">19</text>
+  <text x="1020" y="593" class="body bold">LIFT-007</text>
+  <rect x="1112" y="579" width="230" height="14" rx="7" fill="#eeeaf5"/>
+  <rect x="1112" y="579" width="150" height="14" rx="7" fill="#9884d1"/>
+  <text x="1363" y="592" text-anchor="end" class="body bold">15</text>
+  <text x="1020" y="634" class="body bold">LIFT-002</text>
+  <rect x="1112" y="620" width="230" height="14" rx="7" fill="#eeeaf5"/>
+  <rect x="1112" y="620" width="120" height="14" rx="7" fill="#ae9eda"/>
+  <text x="1363" y="633" text-anchor="end" class="body bold">12</text>
+  <text x="1020" y="682" class="small">Use counts show demand, not equipment condition.</text>
+
+  <rect x="270" y="730" width="568" height="244" rx="14" class="card"/>
+  <text x="294" y="764" class="bold" font-size="17">Current custody age</text>
+  <text x="294" y="785" class="small">Live view · all unreturned loans, including cancelled loans</text>
+  <text x="294" y="828" class="body">Under 24 hours</text>
+  <rect x="440" y="814" width="242" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="440" y="814" width="210" height="16" rx="8" fill="#6c50b5"/>
+  <text x="710" y="828" class="body bold">2</text>
+  <text x="294" y="866" class="body">1 to 3 days</text>
+  <rect x="440" y="852" width="242" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="440" y="852" width="110" height="16" rx="8" fill="#927bd0"/>
+  <text x="710" y="866" class="body bold">1</text>
+  <text x="294" y="904" class="body">3 to 7 days</text>
+  <rect x="440" y="890" width="242" height="16" rx="8" fill="#eeeaf5"/>
+  <rect x="440" y="890" width="110" height="16" rx="8" fill="#b5a7df"/>
+  <text x="710" y="904" class="body bold">1</text>
+  <text x="294" y="948" class="small">Age bands only; no overdue threshold is implied.</text>
+
+  <rect x="856" y="730" width="584" height="244" rx="14" class="card"/>
+  <text x="880" y="764" class="bold" font-size="17">Reservation outcomes</text>
+  <text x="880" y="785" class="small">Reservations starting in the selected period</text>
+  <rect x="880" y="811" width="510" height="20" rx="10" fill="#eeeaf5"/>
+  <path d="M890 811h282a10 10 0 0 1 10 10 10 10 0 0 1-10 10H890a10 10 0 0 1-10-10 10 10 0 0 1 10-10" fill="#5f46a8"/>
+  <rect x="1182" y="811" width="57" height="20" fill="#d08a50"/>
+  <path d="M1239 811h141a10 10 0 0 1 10 10 10 10 0 0 1-10 10h-141z" fill="#d7d1e4"/>
+  <circle cx="892" cy="864" r="5" fill="#5f46a8"/>
+  <text x="906" y="869" class="body">Picked up</text>
+  <text x="1365" y="869" text-anchor="end" class="body bold">16</text>
+  <circle cx="892" cy="895" r="5" fill="#d08a50"/>
+  <text x="906" y="900" class="body">Expired · no-show</text>
+  <text x="1365" y="900" text-anchor="end" class="body bold">2</text>
+  <circle cx="892" cy="926" r="5" fill="#d7d1e4"/>
+  <text x="906" y="931" class="body">Cancelled</text>
+  <text x="1365" y="931" text-anchor="end" class="body bold">3</text>
+  <text x="880" y="958" class="small">Future confirmed reservations are shown separately from the pickup-rate denominator.</text>
+</svg>

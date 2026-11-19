@@ -222,7 +222,7 @@ endpoint.
 
 ## 7. User interface and authorization
 
-The detailed admin navigation and Phase 4 UI review points are in
+The approved admin navigation and remaining Phase 4 UI work are documented in
 [phase-4-admin-ia.md](phase-4-admin-ia.md).
 
 - **QR status page:** elevator identification, clear available/checked-out/

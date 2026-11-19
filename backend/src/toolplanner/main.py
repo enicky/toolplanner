@@ -31,9 +31,11 @@ from toolplanner.schemas import (
     ChangePasswordRequest,
     CheckoutRequest,
     DepartmentCreate,
+    DepartmentUpdate,
     ElevatorCreate,
     ElevatorUpdate,
     LocationCreate,
+    LocationUpdate,
     LoginRequest,
     PasswordReset,
     ReservationCreate,
@@ -241,6 +243,7 @@ def create_app(
         db.commit()
         response.delete_cookie("toolplanner_session", path="/")
         response.delete_cookie("toolplanner_csrf", path="/")
+        response.status_code = 204
         return response
 
     @app.get("/api/v1/me")
@@ -843,9 +846,9 @@ def create_app(
             last_known_location_id=payload.location_id,
         )
         db.add(elevator)
-        db.flush()
-        audit(db, admin.id, "elevator_created", "elevator", elevator.id)
         try:
+            db.flush()
+            audit(db, admin.id, "elevator_created", "elevator", elevator.id)
             db.commit()
         except IntegrityError as exc:
             db.rollback()
@@ -1033,14 +1036,26 @@ def create_app(
         _: Annotated[UserAccount, Depends(require_admin)],
         db: Annotated[Session, Depends(get_db)],
     ):
+        rows = db.execute(
+            select(Location, func.count(Elevator.id))
+            .outerjoin(
+                Elevator,
+                (Elevator.last_known_location_id == Location.id)
+                & (Elevator.status != "retired"),
+            )
+            .group_by(Location.id)
+            .order_by(Location.name)
+        ).all()
         return [
             {
                 "id": row.id,
                 "name": row.name,
+                "details": row.details,
                 "is_active": row.is_active,
                 "is_default": row.is_default,
+                "elevator_count": int(elevator_count),
             }
-            for row in db.scalars(select(Location).order_by(Location.name)).all()
+            for row, elevator_count in rows
         ]
 
     @app.post("/api/v1/admin/locations", status_code=201)
@@ -1070,6 +1085,91 @@ def create_app(
             raise HTTPException(status_code=409, detail="Location already exists.") from exc
         return {"id": location.id, "name": location.name, "is_default": location.is_default}
 
+    @app.patch("/api/v1/admin/locations/{location_id}")
+    def update_location(
+        location_id: str,
+        payload: LocationUpdate,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        location = db.get(Location, location_id)
+        if not location:
+            raise HTTPException(status_code=404, detail="Location not found.")
+        changes = payload.model_dump(exclude_unset=True)
+        if not changes:
+            raise HTTPException(status_code=422, detail="Provide at least one field to update.")
+        if "name" in changes:
+            name = changes["name"].strip()
+            if not name:
+                raise HTTPException(status_code=422, detail="Location name cannot be empty.")
+            location.name = name
+        if "details" in changes:
+            location.details = changes["details"].strip() if changes["details"] else None
+        audit(db, admin.id, "location_updated", "location", location.id)
+        try:
+            db.commit()
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Location name already exists.") from exc
+        return {
+            "id": location.id,
+            "name": location.name,
+            "details": location.details,
+            "is_active": location.is_active,
+            "is_default": location.is_default,
+        }
+
+    @app.delete("/api/v1/admin/locations/{location_id}")
+    def archive_location(
+        location_id: str,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        location = db.get(Location, location_id)
+        if not location:
+            raise HTTPException(status_code=404, detail="Location not found.")
+        if not location.is_active:
+            raise HTTPException(status_code=409, detail="Location is already archived.")
+        if location.is_default:
+            raise HTTPException(
+                status_code=409,
+                detail="Choose another default location before deleting this one.",
+            )
+        assigned_elevator = db.scalar(
+            select(Elevator.id).where(
+                Elevator.last_known_location_id == location.id,
+                Elevator.status != "retired",
+            )
+        )
+        if assigned_elevator:
+            raise HTTPException(
+                status_code=409,
+                detail="Move non-retired elevators to another location before deleting this one.",
+            )
+        location.is_active = False
+        audit(db, admin.id, "location_archived", "location", location.id)
+        db.commit()
+        return {"id": location.id, "is_active": False, "preserved_for_history": True}
+
+    @app.post("/api/v1/admin/locations/{location_id}/restore")
+    def restore_location(
+        location_id: str,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        location = db.get(Location, location_id)
+        if not location:
+            raise HTTPException(status_code=404, detail="Location not found.")
+        if location.is_active:
+            raise HTTPException(status_code=409, detail="Location is already active.")
+        location.is_active = True
+        audit(db, admin.id, "location_restored", "location", location.id)
+        db.commit()
+        return {"id": location.id, "is_active": True}
+
     @app.post("/api/v1/admin/locations/{location_id}/set-default")
     def set_default_location(
         location_id: str,
@@ -1091,9 +1191,24 @@ def create_app(
         _: Annotated[UserAccount, Depends(require_admin)],
         db: Annotated[Session, Depends(get_db)],
     ):
+        rows = db.execute(
+            select(Department, func.count(UserAccount.id))
+            .outerjoin(
+                UserAccount,
+                (UserAccount.department_id == Department.id)
+                & UserAccount.is_active.is_(True),
+            )
+            .group_by(Department.id)
+            .order_by(Department.name)
+        ).all()
         return [
-            {"id": row.id, "name": row.name, "is_active": row.is_active}
-            for row in db.scalars(select(Department).order_by(Department.name)).all()
+            {
+                "id": department.id,
+                "name": department.name,
+                "is_active": department.is_active,
+                "active_user_count": int(active_user_count),
+            }
+            for department, active_user_count in rows
         ]
 
     @app.post("/api/v1/admin/departments", status_code=201)
@@ -1113,6 +1228,77 @@ def create_app(
             db.rollback()
             raise HTTPException(status_code=409, detail="Department already exists.") from exc
         return {"id": department.id, "name": department.name}
+
+    @app.patch("/api/v1/admin/departments/{department_id}")
+    def update_department(
+        department_id: str,
+        payload: DepartmentUpdate,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        department = db.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found.")
+        changes = payload.model_dump(exclude_unset=True)
+        if not changes:
+            raise HTTPException(status_code=422, detail="Provide a department name.")
+        name = changes["name"].strip() if changes["name"] else ""
+        if not name:
+            raise HTTPException(status_code=422, detail="Department name cannot be empty.")
+        department.name = name
+        audit(db, admin.id, "department_updated", "department", department.id)
+        try:
+            db.commit()
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Department name already exists.") from exc
+        return {"id": department.id, "name": department.name, "is_active": department.is_active}
+
+    @app.delete("/api/v1/admin/departments/{department_id}")
+    def archive_department(
+        department_id: str,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        department = db.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found.")
+        if not department.is_active:
+            raise HTTPException(status_code=409, detail="Department is already archived.")
+        active_user = db.scalar(
+            select(UserAccount.id).where(
+                UserAccount.department_id == department.id,
+                UserAccount.is_active.is_(True),
+            )
+        )
+        if active_user:
+            raise HTTPException(
+                status_code=409,
+                detail="Reassign active user accounts before deleting this department.",
+            )
+        department.is_active = False
+        audit(db, admin.id, "department_archived", "department", department.id)
+        db.commit()
+        return {"id": department.id, "is_active": False, "preserved_for_history": True}
+
+    @app.post("/api/v1/admin/departments/{department_id}/restore")
+    def restore_department(
+        department_id: str,
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        _: Annotated[None, Depends(require_csrf)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        department = db.get(Department, department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found.")
+        if department.is_active:
+            raise HTTPException(status_code=409, detail="Department is already active.")
+        department.is_active = True
+        audit(db, admin.id, "department_restored", "department", department.id)
+        db.commit()
+        return {"id": department.id, "is_active": True}
 
     @app.get("/api/v1/admin/reservation-settings")
     def get_reservation_settings(
@@ -1156,19 +1342,93 @@ def create_app(
         _: Annotated[UserAccount, Depends(require_admin)],
         db: Annotated[Session, Depends(get_db)],
     ):
-        rows = db.scalars(select(Loan).order_by(Loan.checked_out_at.desc()).limit(200)).all()
+        rows = db.execute(
+            select(Loan, Elevator.registration_number, Location.name)
+            .join(Elevator, Elevator.id == Loan.elevator_id)
+            .outerjoin(Location, Location.id == Loan.checkout_location_id)
+            .order_by(Loan.checked_out_at.desc())
+            .limit(200)
+        ).all()
         return [
             {
                 "id": loan.id,
                 "elevator_id": loan.elevator_id,
+                "registration_number": registration_number,
                 "borrower_name": loan.borrower_name,
                 "department": loan.department_snapshot,
+                "checkout_location": location_name,
+                "destination": loan.destination,
                 "checked_out_at": loan.checked_out_at,
                 "returned_at": loan.returned_at,
                 "status": loan.status,
             }
-            for loan in rows
+            for loan, registration_number, location_name in rows
         ]
+
+    @app.get("/api/v1/admin/overview")
+    def admin_overview(
+        _: Annotated[UserAccount, Depends(require_admin)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        active_elevators = db.scalar(
+            select(func.count()).select_from(Elevator).where(Elevator.status == "active")
+        )
+        available_elevators = db.scalar(
+            select(func.count())
+            .select_from(Elevator)
+            .where(
+                Elevator.status == "active",
+                ~select(Loan.id)
+                .where(Loan.elevator_id == Elevator.id, Loan.returned_at.is_(None))
+                .exists(),
+            )
+        )
+        blocked_elevators = db.scalar(
+            select(func.count()).select_from(Elevator).where(Elevator.status == "blocked")
+        )
+        retired_elevators = db.scalar(
+            select(func.count()).select_from(Elevator).where(Elevator.status == "retired")
+        )
+        outstanding_query = (
+            select(Loan.id, Loan.checked_out_at, Loan.status, Elevator.registration_number)
+            .join(Elevator, Elevator.id == Loan.elevator_id)
+            .where(Loan.returned_at.is_(None))
+            .order_by(Loan.checked_out_at.asc())
+        )
+        outstanding = db.execute(outstanding_query).all()
+        now = utc_now()
+        at_risk_count = db.scalar(
+            select(func.count()).select_from(Reservation).join(
+                Elevator, Elevator.id == Reservation.elevator_id
+            ).where(
+                Reservation.status == "confirmed",
+                Reservation.starts_at <= now,
+                Reservation.ends_at > now,
+                or_(
+                    Elevator.status != "active",
+                    select(Loan.id)
+                    .where(Loan.elevator_id == Elevator.id, Loan.returned_at.is_(None))
+                    .exists(),
+                ),
+            )
+        )
+        oldest = [
+            {
+                "registration_number": row.registration_number,
+                "loan_age_seconds": max(0, int((now - as_utc(row.checked_out_at)).total_seconds())),
+                "status": row.status,
+            }
+            for row in outstanding[:5]
+        ]
+        return {
+            "available_count": int(available_elevators or 0),
+            "active_count": int(active_elevators or 0),
+            "outstanding_custody_count": len(outstanding),
+            "blocked_count": int(blocked_elevators or 0),
+            "retired_count": int(retired_elevators or 0),
+            "at_risk_reservation_count": int(at_risk_count or 0),
+            "oldest_custody": oldest,
+        }
 
     @app.get("/api/v1/admin/reservations")
     def list_admin_reservations(
@@ -1192,6 +1452,30 @@ def create_app(
                 "status": reservation.status,
             }
             for reservation, elevator, requester in rows
+        ]
+
+    @app.get("/api/v1/admin/audit")
+    def list_audit_events(
+        _: Annotated[UserAccount, Depends(require_admin)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        rows = db.execute(
+            select(AuditEvent, UserAccount.display_name)
+            .outerjoin(UserAccount, UserAccount.id == AuditEvent.actor_user_id)
+            .order_by(AuditEvent.occurred_at.desc())
+            .limit(200)
+        ).all()
+        return [
+            {
+                "id": event.id,
+                "actor": actor_name or "System",
+                "action": event.action,
+                "entity_type": event.entity_type,
+                "entity_id": event.entity_id,
+                "reason": event.reason,
+                "occurred_at": event.occurred_at,
+            }
+            for event, actor_name in rows
         ]
 
     @app.get("/api/v1/admin/reports/usage")

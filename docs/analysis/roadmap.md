@@ -74,6 +74,8 @@ Status: **Foundation scaffold implemented; CI and checks remain**
   containing placeholders only.
 - [ ] Add formatting, linting, type checking, and test commands to CI.
 - [x] Add local developer setup documentation and health checks.
+- [x] Add a local startup script that starts only PostgreSQL in Docker, runs
+  the Python API and React frontend locally, and waits for API readiness.
 - [x] Add safe initial seed data for local development.
 
 **Exit:** A developer can start the app and database locally and run the
@@ -117,12 +119,31 @@ tests are still required before claiming the concurrency invariant verified.
 
 ## Phase 4 — User-facing application
 
-Status: **Core flows implemented; admin navigation redesign proposed for review**
+Status: **Admin navigation and site configuration implemented; remaining page functionality and verification open**
 
-- [x] Analyze the current all-in-one admin workspace and propose a sidebar with
-  separate management routes in [phase-4-admin-ia.md](phase-4-admin-ia.md).
-- [ ] Review and approve the admin navigation, page grouping, and overview/report
-  defaults before implementing the redesign.
+- [x] Analyze the current all-in-one admin workspace and propose separate
+  management routes in [phase-4-admin-ia.md](phase-4-admin-ia.md).
+- [x] Implement the sidebar navigation and URL-backed routes for Overview,
+  Inventory, Current loans, Reservations, Users, Locations & departments,
+  Reservation rules, Reports, and Audit activity.
+- [x] Add a responsive navigation drawer with Escape handling, focus return,
+  focus containment, active-route state, and direct-link support.
+- [x] Keep the desktop sidebar in the page layout (not layered over content),
+  expand admin content to the available viewport, and keep phone drawers below
+  the application header.
+- [x] Keep dashboard totals aggregate-only; show only the admin-authorized
+  outstanding-custody roster on Overview and leave completed person-level
+  history to Reports.
+- [x] Add frontend tests for direct routes, sidebar navigation, and mobile
+  drawer open/close/focus behavior.
+- [x] Implement separate Locations and Departments tabs with create, edit,
+  archive, and restore actions; protect the default location and require
+  reassignment of linked elevators or active users before archiving.
+- [x] Document the proposed aggregate-first Reports dashboard and create visual
+  mockups in [phase-4-reports-proposal.md](phase-4-reports-proposal.md);
+  implementation awaits product-owner review.
+- [ ] Complete inventory location assignment/filtering and report date/filter
+  controls with URL query state.
 
 - [x] Implement mobile elevator status and borrow pages.
 - [x] Make immediate checkout the default and implement the future reservation
@@ -134,7 +155,8 @@ Status: **Core flows implemented; admin navigation redesign proposed for review*
 - [x] Implement admin user management, configurable reservation rules, and
   blocked-status controls; restrict person-level history/exports to admins.
 - [x] Require newly issued initial passwords to be changed at first login.
-- [ ] Complete inventory edit/retire/search flows and location editing.
+- [ ] Complete inventory elevator edit/retire/search flows and location
+  assignment.
 - [x] Implement QR preview, download/print, and documented token rotation.
 - [ ] Complete active-loan and history reports with approved filters/export.
 - [ ] Enforce aggregate-by-default access and report age without an overdue

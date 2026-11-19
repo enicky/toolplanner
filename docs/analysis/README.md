@@ -18,6 +18,8 @@ Decisions that affect identity, access, return behavior, and deployment are
 called out in [open questions](open-questions.md).
 Detailed API, database, security, and deployment design is in
 [solution-design.md](solution-design.md).
+The proposed report dashboard, including visual previews and metric
+definitions, is in [phase-4-reports-proposal.md](phase-4-reports-proposal.md).
 
 ## At a glance
 

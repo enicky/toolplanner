@@ -1,8 +1,8 @@
 # Phase 4 — admin experience and remaining UI decisions
 
-**Status:** Navigation proposal ready for product-owner review
-**Implementation:** Current Phase 4 UI is a prototype; the proposed navigation
-and separated admin pages are not implemented yet.
+**Status:** Navigation proposal approved for implementation
+**Implementation:** Sidebar routes and the tabbed Locations & departments page
+are implemented, including create, edit, archive, and restore actions.
 
 This proposal responds to the request for a dedicated sidebar with separate
 management pages instead of putting every admin function on one long page. It
@@ -35,11 +35,13 @@ reach them from the QR flow without changing their role or authorization.
   preserve the selected page.
 - Show one management task at a time; the overview is a summary, not a place to
   duplicate every management form.
-- Persistent desktop sidebar should show the page label and a visually distinct
-  active item, with `aria-current="page"`.
-- On phone/iPad widths, use a compact top bar and a button-controlled navigation
-  drawer. The drawer must support keyboard open/close, Escape, focus return,
-  screen-reader labels, and touch targets; selecting a destination closes it.
+- On desktop/tablet, keep the sidebar in the left layout column and sticky while
+  scrolling. It must not be fixed over the application header, alerts, page
+  content, or footer. Use the full remaining viewport width for the page body.
+- On phone widths, use a compact top bar and a button-controlled navigation
+  drawer that starts below the application header. The drawer must support
+  keyboard open/close, Escape, focus return, focus containment, screen-reader
+  labels, and touch targets; selecting a destination closes it.
 - Include a clear page title and a short description on each route. Preserve the
   existing Sanofi-inspired restrained purple palette and responsive card/table
   treatment.
@@ -55,9 +57,13 @@ reach them from the QR flow without changing their role or authorization.
 
 - Keep the dashboard concise: essential totals, near-term reservation risk,
   and oldest outstanding loans.
+- Show a compact **Currently loaned** roster by registration number, typed
+  borrower name, destination/pickup location, checkout time, and loan age, with
+  a link to the full Current loans page. This is limited to open custody
+  records and is available to admins only.
 - Do not label loans overdue until operations configures the threshold.
-- Do not include person-level history on the dashboard by default. Admin-only
-  detail can be reached from a specific operational record.
+- Do not include completed person-level loan history on the dashboard. Historical
+  personal details remain in the admin-only Reports view.
 
 ### Inventory
 
@@ -80,8 +86,15 @@ reach them from the QR flow without changing their role or authorization.
 
 ### Locations and departments
 
+- Separate location and department management into accessible tabs.
 - Mark one active physical location as default. Explain that changing the
   default affects new/future operations only and does not rewrite loan history.
+- Allow editing names/details and deleting records from active selection.
+  Deletion archives instead of removing records referenced by history; archived
+  records can be restored.
+- Show how many non-retired elevators or active users are assigned to each
+  record. Require reassignment before archiving an in-use location or
+  department, and prevent archiving the default location.
 - Disabling a location/department used by history must preserve its snapshot.
 - Do not let an admin delete a location that is still needed as an active
   elevator location or default without a replacement.
@@ -106,6 +119,9 @@ reach them from the QR flow without changing their role or authorization.
   and be audited.
 - Audit entries are append-only and retained under the approved three-year
   cleanup rule.
+- The proposed report-dashboard values, views, and data definitions are in
+  [phase-4-reports-proposal.md](phase-4-reports-proposal.md); implementation
+  remains subject to product-owner review.
 
 ## Remaining Phase 4 decisions and recommended defaults
 
@@ -127,6 +143,7 @@ The defaults below can be used unless the product owner prefers otherwise.
 
 1. Admin routes use a persistent desktop sidebar and a keyboard-accessible
    mobile navigation drawer; each item opens a separate URL and page.
+   The desktop sidebar does not obscure the header, alerts, content, or footer.
 2. The admin overview is a concise summary; it does not contain all management
    forms or expose person-level data by default.
 3. Inventory, Current loans, Reservations, Users, Locations & departments,
@@ -159,10 +176,10 @@ The current roadmap correctly leaves these tasks open:
 
 ## Review checklist
 
-- [ ] Approve the sidebar destinations, labels, and grouping.
-- [ ] Approve a dedicated Current loans page and separate Reservations page.
+- [x] Approve the sidebar destinations, labels, and grouping.
+- [x] Approve a dedicated Current loans page and separate Reservations page.
 - [ ] Approve the Overview and Reports recommended default date range.
-- [ ] Approve a dedicated Audit activity page for all admins.
+- [x] Approve a dedicated Audit activity page for all admins.
 - [ ] Approve URL query parameters for report filters and dates.
-- [ ] Approve the mobile drawer interaction and supported browser/device
+- [ ] Validate the mobile drawer against the supported browser/device
   acceptance matrix.

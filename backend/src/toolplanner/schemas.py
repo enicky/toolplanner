@@ -82,8 +82,17 @@ class LocationCreate(StrictModel):
     is_default: bool = False
 
 
+class LocationUpdate(StrictModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    details: str | None = Field(default=None, max_length=240)
+
+
 class DepartmentCreate(StrictModel):
     name: str = Field(min_length=1, max_length=120)
+
+
+class DepartmentUpdate(StrictModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
 
 
 class ReservationPolicyUpdate(StrictModel):
