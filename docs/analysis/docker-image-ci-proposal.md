@@ -33,7 +33,9 @@ tag yet.
   [`web/Dockerfile`](../../web/Dockerfile) are independent build targets. The
   Compose file also builds both from their respective directories. Each
   context now has its own `.dockerignore` to exclude local environments and
-  generated files.
+  generated files. The web Dockerfile runs Node on the builder platform and
+  copies static assets into the ARM64 Nginx image, avoiding emulated Node and
+  target-stage `RUN` instructions.
 - The Helm chart retains configurable repository/tag values and now supports
   digest-pinned images and optional `imagePullSecrets` on the API, web,
   migration, retention, and reservation-maintenance pods.
