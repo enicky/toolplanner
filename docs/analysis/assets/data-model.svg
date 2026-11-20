@@ -137,10 +137,10 @@
     <text x="810" y="466" class="entityTitle">loan</text>
     <text x="808" y="506" class="key">PK</text><text x="842" y="506" class="field">id</text>
     <text x="808" y="532" class="field">elevator_id • actor_user_id FKs</text>
-    <text x="808" y="558" class="field">borrower_name • dept_snapshot</text>
-    <text x="808" y="584" class="field">checkout / destination location</text>
-    <text x="808" y="610" class="field">checked_out_at • returned_at</text>
-    <text x="808" y="636" class="field">return_actor • return_location</text>
+    <text x="808" y="558" class="field">borrower • dept ID/name snapshots</text>
+    <text x="808" y="584" class="field">checkout location ID/name • destination</text>
+    <text x="808" y="610" class="field">checkout_at • returned_at</text>
+    <text x="808" y="636" class="field">return actor • location ID/name snapshot</text>
     <text x="808" y="662" class="field">status • cancelled_by • reason</text>
     <text x="808" y="688" class="key">RULE</text><text x="852" y="688" class="field">cancelled stays in custody</text>
   </g>

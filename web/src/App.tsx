@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useSearchParams,
 } from 'react-router-dom'
 import { brusselsTimeToIso } from './time'
 
@@ -112,12 +113,6 @@ type AdminReservation = {
   status: string
 }
 
-type UsageRow = {
-  registration_number: string
-  checkout_count: number
-  average_duration_seconds: number | null
-}
-
 type AdminLoan = {
   id: string
   elevator_id: string
@@ -153,6 +148,61 @@ type AuditEntry = {
   entity_id: string
   reason: string | null
   occurred_at: string
+}
+
+type ReportFilters = {
+  start_date: string
+  end_date: string
+  elevator_id: string
+  department_id: string
+  location_id: string
+  bucket: 'day' | 'week' | 'month'
+}
+
+type ReportCount = { band: string; count: number }
+
+type ReportsDashboardData = {
+  filters: Omit<ReportFilters, 'elevator_id' | 'department_id' | 'location_id'> & {
+    elevator_id: string | null
+    department_id: string | null
+    location_id: string | null
+  }
+  summary: {
+    checkout_count: number
+    completed_loan_count: number
+    average_returned_duration_seconds: number | null
+    previous_checkout_count: number
+    checkout_change_percent: number | null
+  }
+  trend: Array<{ period: string; checkout_count: number }>
+  elevator_usage: Array<{
+    elevator_id: string
+    registration_number: string
+    checkout_count: number
+  }>
+  department_usage: Array<{
+    department_id: string | null
+    department: string
+    checkout_count: number
+  }>
+  location_usage: Array<{
+    location_id: string | null
+    location: string
+    checkout_count: number
+  }>
+  duration_bands: ReportCount[]
+  current_custody_count: number
+  custody_age_bands: ReportCount[]
+  reservation_outcomes: {
+    picked_up: number
+    no_show: number
+    cancelled: number
+    upcoming: number
+    awaiting_pickup: number
+    pickup_rate_percent: number | null
+    resolved_count: number
+  } | null
+  reservation_note: string | null
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -785,7 +835,6 @@ function AdminWorkspace({
   const [loans, setLoans] = useState<AdminLoan[]>([])
   const [adminReservations, setAdminReservations] = useState<AdminReservation[]>([])
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
-  const [usage, setUsage] = useState<UsageRow[]>([])
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [reservationSettings, setReservationSettings] = useState<ReservationPolicy>({
     minimum_notice_seconds: 604800,
@@ -827,7 +876,6 @@ function AdminWorkspace({
       setLoans([])
       setAdminReservations([])
       setUsers([])
-      setUsage([])
       setAuditEntries([])
       switch (currentPage) {
         case 'overview':
@@ -866,9 +914,6 @@ function AdminWorkspace({
           break
         case 'reservation-rules':
           setReservationSettings(await api<ReservationPolicy>('/admin/reservation-settings'))
-          break
-        case 'reports':
-          setUsage(await api<UsageRow[]>('/admin/reports/usage'))
           break
         case 'audit':
           setAuditEntries(await api<AuditEntry[]>('/admin/audit'))
@@ -1371,27 +1416,7 @@ function AdminWorkspace({
     </section>
   )
 
-  const reportsPage = (
-    <div className="admin-page-stack">
-      <section className="panel">
-        <div className="section-heading">
-          <div><p className="eyebrow">AGGREGATE USAGE</p><h2>Elevator usage</h2></div>
-          <a className="primary-button text-button" href="/api/v1/admin/reports/loans.csv">Export loan history CSV</a>
-        </div>
-        {usage.length === 0 ? <p className="muted">No checkout history is available yet.</p> : (
-          <div className="elevator-list">
-            {usage.map((row) => (
-              <article className="elevator-row" key={row.registration_number}>
-                <strong>{row.registration_number}</strong>
-                <span className="muted">{row.checkout_count} checkouts · average returned-loan duration {row.average_duration_seconds === null ? 'not available' : `${Math.round(row.average_duration_seconds / 3600)} hours`}</span>
-              </article>
-            ))}
-          </div>
-        )}
-        <p className="help-text">Loan age is shown without an overdue label until operations configures a threshold.</p>
-      </section>
-    </div>
-  )
+  const reportsPage = <ReportsDashboard />
 
   const overviewPage = (
     <div className="admin-page-stack">
@@ -1863,12 +1888,404 @@ function SiteConfigModal({
   )
 }
 
-function MetricCard({ label, value, detail }: { label: string; value: number; detail: string }) {
+function MetricCard({ label, value, detail }: { label: string; value: number | string; detail: string }) {
   return (
     <article className="metric-card">
       <div className="metric-value">{value}</div>
       <div className="metric-label">{label}</div>
       <div className="metric-detail">{detail}</div>
     </article>
+  )
+}
+
+function defaultReportFilters(params = new URLSearchParams()): ReportFilters {
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Brussels',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+  const endDate = params.get('end_date') || today
+  const start = params.get('start_date')
+  const startDate = start || (() => {
+    const date = new Date(`${endDate}T00:00:00Z`)
+    date.setUTCDate(date.getUTCDate() - 29)
+    return date.toISOString().slice(0, 10)
+  })()
+  const bucket = params.get('bucket')
+  return {
+    start_date: startDate,
+    end_date: endDate,
+    elevator_id: params.get('elevator_id') || '',
+    department_id: params.get('department_id') || '',
+    location_id: params.get('location_id') || '',
+    bucket: bucket === 'week' || bucket === 'month' ? bucket : 'day',
+  }
+}
+
+function reportParams(filters: ReportFilters): URLSearchParams {
+  const params = new URLSearchParams()
+  params.set('start_date', filters.start_date)
+  params.set('end_date', filters.end_date)
+  params.set('bucket', filters.bucket)
+  if (filters.elevator_id) params.set('elevator_id', filters.elevator_id)
+  if (filters.department_id) params.set('department_id', filters.department_id)
+  if (filters.location_id) params.set('location_id', filters.location_id)
+  return params
+}
+
+function formatReportDuration(seconds: number | null): string {
+  if (seconds === null) return 'Not available'
+  const roundedMinutes = Math.round(seconds / 60)
+  const days = Math.floor(roundedMinutes / 1440)
+  const hours = Math.floor((roundedMinutes % 1440) / 60)
+  const minutes = roundedMinutes % 60
+  if (days) return `${days}d ${hours}h`
+  if (hours) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+function formatReportPeriod(value: string, includeYear = false): string {
+  if (value.length === 7) {
+    const [year, month] = value.split('-').map(Number)
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(
+      new Date(Date.UTC(year, month - 1, 15)),
+    )
+  }
+  const [year, month, day] = value.split('-').map(Number)
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' as const } : {}),
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year, month - 1, day, 12)))
+}
+
+function ReportsDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryString = searchParams.toString()
+  const [filters, setFilters] = useState(() => defaultReportFilters(searchParams))
+  const [report, setReport] = useState<ReportsDashboardData | null>(null)
+  const [elevators, setElevators] = useState<Elevator[]>([])
+  const [locations, setLocations] = useState<SelectOption[]>([])
+  const [departments, setDepartments] = useState<SelectOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    Promise.all([
+      api<Elevator[]>('/admin/elevators'),
+      api<SelectOption[]>('/admin/locations'),
+      api<SelectOption[]>('/admin/departments'),
+    ]).then(([nextElevators, nextLocations, nextDepartments]) => {
+      if (!active) return
+      setElevators(nextElevators)
+      setLocations(nextLocations)
+      setDepartments(nextDepartments)
+    }).catch((failure: unknown) => {
+      if (active) setError(failure instanceof Error ? failure.message : 'Could not load report filters.')
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(queryString)
+    if (!params.has('start_date') || !params.has('end_date')) {
+      const defaults = defaultReportFilters(params)
+      setFilters(defaults)
+      setSearchParams(reportParams(defaults), { replace: true })
+      return
+    }
+
+    let active = true
+    const nextFilters = defaultReportFilters(params)
+    setFilters(nextFilters)
+    setLoading(true)
+    setError('')
+    api<ReportsDashboardData>(`/admin/reports/dashboard?${params.toString()}`)
+      .then((data) => {
+        if (active) setReport(data)
+      })
+      .catch((failure: unknown) => {
+        if (active) {
+          setReport(null)
+          setError(failure instanceof Error ? failure.message : 'Could not load reports.')
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
+  }, [queryString, setSearchParams])
+
+  function applyFilters(event: FormEvent) {
+    event.preventDefault()
+    if (filters.start_date > filters.end_date) {
+      setError('End date must be on or after start date.')
+      return
+    }
+    setSearchParams(reportParams(filters))
+  }
+
+  function resetFilters() {
+    const defaults = defaultReportFilters()
+    setFilters(defaults)
+    setSearchParams(reportParams(defaults))
+  }
+
+  const exportParams = new URLSearchParams(queryString)
+  exportParams.delete('bucket')
+  const filteredExportHref = `/api/v1/admin/reports/loans.csv?${exportParams.toString()}`
+  const change = report?.summary.checkout_change_percent
+  const changeDetail = change === null || change === undefined
+    ? 'No prior-period checkouts available for comparison'
+    : `${change > 0 ? '+' : ''}${change}% vs previous equal-length period`
+  const reservationRate = report?.reservation_outcomes?.pickup_rate_percent
+
+  return (
+    <div className="admin-page-stack reports-dashboard">
+      <section className="panel report-filter-panel">
+        <form className="report-filters" onSubmit={applyFilters}>
+          <label>Date range
+            <span className="report-date-fields">
+              <input aria-label="Start date" type="date" required value={filters.start_date}
+                onChange={(event) => setFilters({ ...filters, start_date: event.target.value })} />
+              <span aria-hidden="true">to</span>
+              <input aria-label="End date" type="date" required value={filters.end_date}
+                onChange={(event) => setFilters({ ...filters, end_date: event.target.value })} />
+            </span>
+          </label>
+          <label>Elevator
+            <select value={filters.elevator_id}
+              onChange={(event) => setFilters({ ...filters, elevator_id: event.target.value })}>
+              <option value="">All elevators</option>
+              {elevators.map((elevator) => (
+                <option key={elevator.id} value={elevator.id}>
+                  {elevator.registration_number}{elevator.status === 'retired' ? ' (retired)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>Department
+            <select value={filters.department_id}
+              onChange={(event) => setFilters({ ...filters, department_id: event.target.value })}>
+              <option value="">All departments</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}{department.is_active === false ? ' (archived)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>Checkout location
+            <select value={filters.location_id}
+              onChange={(event) => setFilters({ ...filters, location_id: event.target.value })}>
+              <option value="">All locations</option>
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}{location.is_active === false ? ' (archived)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>Trend grouping
+            <select value={filters.bucket}
+              onChange={(event) => setFilters({ ...filters, bucket: event.target.value as ReportFilters['bucket'] })}>
+              <option value="day">By day</option>
+              <option value="week">By week</option>
+              <option value="month">By month</option>
+            </select>
+          </label>
+          <div className="report-filter-actions">
+            <button type="button" className="quiet-button" onClick={resetFilters}>Reset</button>
+            <button type="submit" className="primary-button">Apply filters</button>
+          </div>
+        </form>
+        <div className="report-export-actions">
+          <span className="muted">Report dates and grouping use Europe/Brussels.</span>
+          <a className="primary-button text-button" href={filteredExportHref}>Export filtered loan history</a>
+          <a className="text-link" href="/api/v1/admin/reports/loans-all.csv">Export all retained history</a>
+        </div>
+      </section>
+
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
+      {loading && <div className="admin-loading" role="status">Loading report data…</div>}
+      {report && (
+        <>
+          <section className="metrics-grid report-metrics">
+            <MetricCard
+              label="Checkouts in range"
+              value={report.summary.checkout_count}
+              detail={changeDetail}
+            />
+            <MetricCard
+              label="Average returned loan"
+              value={formatReportDuration(report.summary.average_returned_duration_seconds)}
+              detail={`${report.summary.completed_loan_count} returned loans checked out in range`}
+            />
+            <MetricCard
+              label="Currently in custody"
+              value={report.current_custody_count}
+              detail="Live count; includes administratively cancelled, unreturned loans"
+            />
+            <MetricCard
+              label="Reservation pickup rate"
+              value={reservationRate === null || reservationRate === undefined ? '—' : `${reservationRate}%`}
+              detail={reservationRate === null || reservationRate === undefined
+                ? (report.reservation_note || 'Not enough resolved reservation data')
+                : `${report.reservation_outcomes?.picked_up} picked up of ${report.reservation_outcomes?.resolved_count} resolved`}
+            />
+          </section>
+
+          <section className="panel report-panel">
+            <div className="section-heading">
+              <div><p className="eyebrow">CHECKOUT ACTIVITY</p><h2>Borrowing trend</h2></div>
+              <span className="count-badge">{report.summary.checkout_count} total</span>
+            </div>
+            {report.trend.some((item) => item.checkout_count > 0)
+              ? <ReportTrend data={report.trend} bucket={report.filters.bucket} />
+              : <p className="muted">No checkouts in this date range.</p>}
+          </section>
+
+          <div className="report-panels-grid">
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">ELEVATOR DEMAND</p><h2>Most used elevators</h2></div>
+              </div>
+              <ReportBarList
+                rows={report.elevator_usage.map((item) => ({
+                  label: item.registration_number,
+                  count: item.checkout_count,
+                }))}
+                empty="No elevator usage in this period."
+              />
+              <p className="help-text">Checkout counts show observed demand, not equipment condition.</p>
+            </section>
+
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">LIVE CUSTODY</p><h2>Current loan age</h2></div>
+              </div>
+              <ReportBarList rows={report.custody_age_bands} empty="No elevators are currently in custody." />
+              <p className="help-text">Age bands only; no overdue threshold is implied.</p>
+            </section>
+
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">RESERVATIONS</p><h2>Reservation outcomes</h2></div>
+              </div>
+              {report.reservation_outcomes ? (
+                <ReportBarList rows={[
+                  { band: 'Picked up', count: report.reservation_outcomes.picked_up },
+                  { band: 'Expired · no-show', count: report.reservation_outcomes.no_show },
+                  { band: 'Cancelled', count: report.reservation_outcomes.cancelled },
+                  { band: 'Upcoming confirmed', count: report.reservation_outcomes.upcoming },
+                  { band: 'Awaiting pickup outcome', count: report.reservation_outcomes.awaiting_pickup },
+                ]} empty="No reservations in this period." />
+              ) : <p className="muted">{report.reservation_note}</p>}
+              <p className="help-text">
+                {report.reservation_outcomes
+                  ? 'Pickup rate excludes cancellations and reservations without a resolved outcome.'
+                  : 'Clear department or pickup-location filters to include reservation outcomes.'}
+              </p>
+            </section>
+
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">COMPLETED LOANS</p><h2>Loan duration</h2></div>
+              </div>
+              <ReportBarList rows={report.duration_bands} empty="No returned loans in this period." />
+              <p className="help-text">Duration is calculated for loans checked out during the selected range.</p>
+            </section>
+
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">CHECKOUT BREAKDOWN</p><h2>By department</h2></div>
+              </div>
+              <ReportBarList
+                rows={report.department_usage.map((item) => ({
+                  label: item.department,
+                  count: item.checkout_count,
+                }))}
+                empty="No department data in this period."
+              />
+              <p className="help-text">Uses the department snapshot saved at checkout.</p>
+            </section>
+
+            <section className="panel report-panel">
+              <div className="section-heading">
+                <div><p className="eyebrow">CHECKOUT BREAKDOWN</p><h2>By pickup location</h2></div>
+              </div>
+              <ReportBarList
+                rows={report.location_usage.map((item) => ({
+                  label: item.location,
+                  count: item.checkout_count,
+                }))}
+                empty="No pickup-location data in this period."
+              />
+              <p className="help-text">Uses the location name snapshot saved at checkout.</p>
+            </section>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ReportBarList({
+  rows,
+  empty,
+}: {
+  rows: Array<{ band?: string; label?: string; count: number }>
+  empty: string
+}) {
+  if (rows.length === 0) return <p className="muted">{empty}</p>
+  const maximum = Math.max(1, ...rows.map((row) => row.count))
+  return (
+    <ul className="report-bar-list">
+      {rows.map((row, index) => {
+        const label = row.label ?? row.band ?? ''
+        return (
+          <li key={`${label}-${index}`}>
+            <div className="report-bar-caption">
+              <span>{label}</span>
+              <strong>{row.count}</strong>
+            </div>
+            <div className="report-bar-track" aria-hidden="true">
+              <span style={{ width: `${(row.count / maximum) * 100}%` }} />
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function ReportTrend({
+  data,
+  bucket,
+}: {
+  data: ReportsDashboardData['trend']
+  bucket: ReportFilters['bucket']
+}) {
+  const maximum = Math.max(1, ...data.map((item) => item.checkout_count))
+  const includeYear = data.length > 62
+  return (
+    <ol className="report-trend" aria-label={`Checkout counts by ${bucket}`}>
+      {data.map((item) => (
+        <li key={item.period} title={`${formatReportPeriod(item.period, includeYear)}: ${item.checkout_count} checkouts`}>
+          <strong>{item.checkout_count}</strong>
+          <span className="report-trend-bar" aria-hidden="true">
+            <span style={{ height: `${Math.max(3, (item.checkout_count / maximum) * 100)}%` }} />
+          </span>
+          <span className="report-trend-label">{formatReportPeriod(item.period, includeYear)}</span>
+        </li>
+      ))}
+    </ol>
   )
 }

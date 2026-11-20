@@ -3,7 +3,14 @@ from datetime import UTC, datetime, timedelta
 from conftest import csrf
 from sqlalchemy import select
 
-from toolplanner.models import Department, Elevator, Loan, Reservation, UserAccount
+from toolplanner.models import (
+    Department,
+    Elevator,
+    Loan,
+    Location,
+    Reservation,
+    UserAccount,
+)
 from toolplanner.security import verify_password
 
 
@@ -378,25 +385,195 @@ def test_admin_history_export_is_admin_only_and_formula_safe(clients):
     assert "'+cmd" in report.text
 
 
-def test_admin_usage_report_counts_checkouts_and_returned_durations(clients):
+def test_admin_reports_dashboard_applies_filters_and_groups_in_brussels_time(clients):
+    admin, user, _token = clients
+    second_elevator_response = admin.post(
+        "/api/v1/admin/elevators",
+        headers=csrf(admin),
+        json={"name": "Second lift", "registration_number": "LIFT-002"},
+    )
+    assert second_elevator_response.status_code == 201
+    second_elevator_id = second_elevator_response.json()["id"]
+    with admin.app.state.session_factory.begin() as db:
+        elevator = db.scalar(select(Elevator).where(Elevator.registration_number == "LIFT-001"))
+        user_account = db.scalar(select(UserAccount).where(UserAccount.username == "user"))
+        research = Department(name="Research")
+        annex = Location(name="Annex", is_active=True, is_default=False)
+        db.add_all([research, annex])
+        db.flush()
+        db.add_all(
+            [
+                Loan(
+                    elevator_id=elevator.id,
+                    checkout_actor_user_id=user_account.id,
+                    borrower_name="Historical Borrower",
+                    department_snapshot=research.name,
+                    department_id_snapshot=research.id,
+                    checkout_location_id=annex.id,
+                    checkout_location_snapshot=annex.name,
+                    destination="Building 2",
+                    checked_out_at=datetime(2026, 3, 29, 22, 30, tzinfo=UTC),
+                    returned_at=datetime(2026, 3, 30, 2, 30, tzinfo=UTC),
+                    return_location_id=annex.id,
+                    return_location_snapshot=annex.name,
+                    status="returned",
+                ),
+                Loan(
+                    elevator_id=elevator.id,
+                    checkout_actor_user_id=user_account.id,
+                    borrower_name="Current Borrower",
+                    department_snapshot="Sites & Facilities",
+                    department_id_snapshot=user_account.department_id,
+                    checkout_location_id=None,
+                    checkout_location_snapshot=None,
+                    destination="Building 3",
+                    checked_out_at=datetime(2026, 3, 30, 22, 30, tzinfo=UTC),
+                    status="cancelled",
+                    cancelled_at=datetime(2026, 3, 30, 22, 30, tzinfo=UTC),
+                    cancellation_reason="Inspection",
+                ),
+                Loan(
+                    elevator_id=second_elevator_id,
+                    checkout_actor_user_id=user_account.id,
+                    borrower_name="Other Elevator Borrower",
+                    department_snapshot=research.name,
+                    department_id_snapshot=research.id,
+                    checkout_location_id=annex.id,
+                    checkout_location_snapshot=annex.name,
+                    destination="Building 4",
+                    checked_out_at=datetime(2026, 3, 29, 23, 30, tzinfo=UTC),
+                    returned_at=datetime(2026, 3, 30, 1, 30, tzinfo=UTC),
+                    return_location_id=annex.id,
+                    return_location_snapshot=annex.name,
+                    status="returned",
+                ),
+            ]
+        )
+        annex.name = "Annex renamed"
+        db.flush()
+        db.add_all(
+            [
+                Reservation(
+                    elevator_id=elevator.id,
+                    requester_user_id=user_account.id,
+                    borrower_name="Reservation Borrower",
+                    starts_at=datetime(2026, 3, 30, 1, tzinfo=UTC),
+                    ends_at=datetime(2026, 3, 30, 3, tzinfo=UTC),
+                    status="picked_up",
+                    policy_version=1,
+                ),
+                Reservation(
+                    elevator_id=elevator.id,
+                    requester_user_id=user_account.id,
+                    borrower_name="No Show",
+                    starts_at=datetime(2026, 3, 30, 4, tzinfo=UTC),
+                    ends_at=datetime(2026, 3, 30, 5, tzinfo=UTC),
+                    status="expired",
+                    policy_version=1,
+                ),
+                Reservation(
+                    elevator_id=elevator.id,
+                    requester_user_id=user_account.id,
+                    borrower_name="Cancelled",
+                    starts_at=datetime(2026, 3, 30, 6, tzinfo=UTC),
+                    ends_at=datetime(2026, 3, 30, 7, tzinfo=UTC),
+                    status="cancelled",
+                    policy_version=1,
+                ),
+            ]
+        )
+        department_id = research.id
+        location_id = annex.id
+
+    assert user.get("/api/v1/admin/reports/dashboard").status_code == 403
+    query = (
+        "?start_date=2026-03-30&end_date=2026-03-30"
+        f"&department_id={department_id}&location_id={location_id}"
+    )
+    report_response = admin.get(f"/api/v1/admin/reports/dashboard{query}")
+    assert report_response.status_code == 200, report_response.text
+    report = report_response.json()
+    assert report["summary"]["checkout_count"] == 2
+    assert report["summary"]["completed_loan_count"] == 2
+    assert report["summary"]["average_returned_duration_seconds"] == 10800
+    assert report["trend"] == [{"period": "2026-03-30", "checkout_count": 2}]
+    assert report["department_usage"] == [
+        {"department_id": department_id, "department": "Research", "checkout_count": 2}
+    ]
+    assert report["location_usage"] == [
+        {"location_id": location_id, "location": "Annex", "checkout_count": 2}
+    ]
+    assert report["reservation_outcomes"] is None
+    assert "do not capture department" in report["reservation_note"]
+
+    elevator_filtered = admin.get(
+        f"/api/v1/admin/reports/dashboard{query}&elevator_id={second_elevator_id}"
+    ).json()
+    assert elevator_filtered["summary"]["checkout_count"] == 1
+
+    unfiltered = admin.get(
+        "/api/v1/admin/reports/dashboard?start_date=2026-03-30&end_date=2026-03-30"
+    ).json()
+    assert unfiltered["current_custody_count"] == 1
+    assert sum(item["count"] for item in unfiltered["custody_age_bands"]) == 1
+    assert unfiltered["reservation_outcomes"] == {
+        "picked_up": 1,
+        "no_show": 1,
+        "cancelled": 1,
+        "upcoming": 0,
+        "awaiting_pickup": 0,
+        "pickup_rate_percent": 50.0,
+        "resolved_count": 2,
+    }
+
+    export = admin.get(
+        f"/api/v1/admin/reports/loans.csv{query}&elevator_id={second_elevator_id}"
+    )
+    assert export.status_code == 200
+    assert "Other Elevator Borrower" in export.text
+    assert "Historical Borrower" not in export.text
+    assert "Current Borrower" not in export.text
+    assert "checkout_location" in export.text
+    assert "return_location" in export.text
+
+
+def test_admin_reports_validate_date_range_and_keep_all_history_export(clients):
     admin, user, token = clients
+    invalid_range = admin.get(
+        "/api/v1/admin/reports/dashboard?start_date=2026-04-02&end_date=2026-04-01"
+    )
+    assert invalid_range.status_code == 422
+    too_wide = admin.get(
+        "/api/v1/admin/reports/dashboard?start_date=2020-01-01&end_date=2026-01-01"
+    )
+    assert too_wide.status_code == 422
+    unknown_elevator = admin.get(
+        "/api/v1/admin/reports/dashboard?elevator_id=not-an-elevator"
+    )
+    assert unknown_elevator.status_code == 422
+
+    empty = admin.get(
+        "/api/v1/admin/reports/dashboard?start_date=2020-01-01&end_date=2020-01-01"
+    ).json()
+    assert empty["summary"]["checkout_count"] == 0
+    assert empty["summary"]["average_returned_duration_seconds"] is None
+    assert empty["reservation_outcomes"]["pickup_rate_percent"] is None
+    assert empty["trend"] == [{"period": "2020-01-01", "checkout_count": 0}]
+
     checkout = user.post(
         f"/api/v1/qr/{token}/checkout",
         headers=csrf(user),
-        json={"borrower_name": "Test Borrower", "destination": "Building 2"},
+        json={"borrower_name": "=1+1", "destination": "+cmd"},
     )
     assert checkout.status_code == 201
-    before_return = admin.get("/api/v1/admin/reports/usage").json()
-    assert before_return[0]["checkout_count"] == 1
-    assert before_return[0]["average_duration_seconds"] is None
-    returned = user.post(
-        f"/api/v1/qr/{token}/return",
-        headers=csrf(user),
-        json={},
+    assert user.get("/api/v1/admin/reports/loans-all.csv").status_code == 403
+    all_history = admin.get("/api/v1/admin/reports/loans-all.csv")
+    assert all_history.status_code == 200
+    assert "'=1+1" in all_history.text
+    assert "'+cmd" in all_history.text
+    assert all_history.headers["content-disposition"].endswith(
+        'filename="tool-planner-all-retained-loans.csv"'
     )
-    assert returned.status_code == 200
-    after_return = admin.get("/api/v1/admin/reports/usage").json()
-    assert after_return[0]["average_duration_seconds"] is not None
 
 
 def test_duplicate_elevator_registration_returns_conflict_and_recovers(clients):

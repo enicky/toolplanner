@@ -1,8 +1,8 @@
 # Phase 4 — admin experience and remaining UI decisions
 
 **Status:** Navigation proposal approved for implementation
-**Implementation:** Sidebar routes and the tabbed Locations & departments page
-are implemented, including create, edit, archive, and restore actions.
+**Implementation:** Sidebar routes, tabbed Locations & departments management,
+and the aggregate Reports dashboard are implemented.
 
 This proposal responds to the request for a dedicated sidebar with separate
 management pages instead of putting every admin function on one long page. It
@@ -120,8 +120,8 @@ reach them from the QR flow without changing their role or authorization.
 - Audit entries are append-only and retained under the approved three-year
   cleanup rule.
 - The proposed report-dashboard values, views, and data definitions are in
-  [phase-4-reports-proposal.md](phase-4-reports-proposal.md); implementation
-  remains subject to product-owner review.
+  [phase-4-reports-proposal.md](phase-4-reports-proposal.md); the aggregate
+  dashboard, filters, and exports are implemented.
 
 ## Remaining Phase 4 decisions and recommended defaults
 
@@ -134,7 +134,7 @@ The defaults below can be used unless the product owner prefers otherwise.
 | Current loans versus inventory | Keep a dedicated Current loans page; show only a compact custody summary in Inventory. | Avoid mixing equipment attributes with person-level custody tasks. |
 | Reservation management | Include a separate Reservations page and a separate Reservation rules page. | Operational bookings change often; policy changes should be less frequent and auditable. |
 | Audit navigation | Provide a dedicated Audit activity page, admin-only. | Admins need a discoverable way to inspect corrections and block actions. |
-| Reports defaults | Default to the last 30 days, all elevators/locations/departments, aggregated by day; offer explicit filter controls. | Makes the first report useful without presenting person-level details by default. |
+| Reports defaults | Default to the last 30 days, all elevators/locations/departments, aggregated by day; offer explicit filter controls. | Implemented as an aggregate-first report without person-level details in the dashboard. |
 | Inventory deletion | Retire rather than hard-delete an elevator. | Preserves loan history, QR/audit references, and registration-number uniqueness. |
 | Phone navigation | Collapsible drawer controlled from the top bar; close after navigation. | Preserves screen space while retaining named destinations. |
 | Route state | Store filters and date range in query parameters. | Allows sharing/bookmarking operational views without encoding personal data. |
@@ -165,8 +165,8 @@ The current roadmap correctly leaves these tasks open:
 
 - Complete elevator search/filter, full edit/retire actions, and location
   editing/disable rules.
-- Expand reports with date range and elevator/location/department filters;
-  include aggregate defaults and verify CSV matches filters.
+- Continue PostgreSQL query-plan validation for report aggregation as site data
+  volume grows.
 - Add frontend tests for borrow, reservation, return, blocked/late alerts,
   admin permissions, and inaccessible/error states.
 - Verify keyboard navigation, screen-reader announcements, responsive reflow,
@@ -178,8 +178,8 @@ The current roadmap correctly leaves these tasks open:
 
 - [x] Approve the sidebar destinations, labels, and grouping.
 - [x] Approve a dedicated Current loans page and separate Reservations page.
-- [ ] Approve the Overview and Reports recommended default date range.
+- [x] Approve the Overview and Reports recommended default date range.
 - [x] Approve a dedicated Audit activity page for all admins.
-- [ ] Approve URL query parameters for report filters and dates.
+- [x] Approve URL query parameters for report filters and dates.
 - [ ] Validate the mobile drawer against the supported browser/device
   acceptance matrix.

@@ -2,8 +2,9 @@
 
 **Status:** Design draft ready for review
 
-**Implementation:** Initial foundation and core user/admin flows implemented;
-remaining verification and features are tracked in [roadmap](roadmap.md).
+**Implementation:** Initial foundation, core flows, and aggregate report
+dashboard implemented; remaining verification and features are tracked in
+[roadmap](roadmap.md).
 **Scope source:** [Product analysis](README.md), [confirmed decisions](open-questions.md)
 
 This document turns the approved Phase 0 requirements into a proposed
@@ -89,7 +90,7 @@ token are separately unique; do not expose sequential IDs in public QR URLs.
 | `department` | `id`, unique `name`, `is_active`; seed `Sites & Facilities` |
 | `location` | `id`, `name`, optional area/details, `is_active`, `is_default`; seed `Geel` as default |
 | `elevator` | `id`, unique `registration_number`, `name`, `status` (`active`/`blocked`/`retired`), `block_reason`, opaque unique `qr_token`, `last_known_location_id`, timestamps; seed name/registration `LIFT-001` |
-| `loan` | `id`, `elevator_id`, authenticated checkout actor, typed borrower name, department snapshot, checkout location, destination/details, `checked_out_at`, return actor/time/location, status (`active`/`cancelled`/`returned`), cancellation actor/time/reason |
+| `loan` | `id`, `elevator_id`, authenticated checkout actor, typed borrower name, department ID/name snapshots, checkout location ID/name snapshot, destination/details, `checked_out_at`, return actor/time/location ID/name snapshot, status (`active`/`cancelled`/`returned`), cancellation actor/time/reason |
 | `reservation` | `id`, `elevator_id`, requester account, borrower-name snapshot, requested `[start,end)` instants, status (`confirmed`/`cancelled`/`expired`/`picked_up`), created/cancelled/expired timestamps, linked loan, policy snapshot |
 | `reservation_policy` | Admin-managed values for minimum notice, maximum duration, cancellation cutoff, and no-show grace; increment a version on change |
 | `audit_event` | Actor (nullable for system jobs), action, entity type/ID, timestamp, outcome, reason, and minimal before/after metadata |
@@ -105,11 +106,13 @@ name later without changing the unique registration number.
 - Exactly one active location is the default. Changing the default affects
   future operations only; it does not rewrite loan history.
 - The checkout row stores the pickup location and the user's stated destination.
+  Store its location name as a snapshot as well as the stable location ID, so
+  historical reports and exports remain unchanged after a location is renamed.
   The elevator's last-known location can be updated from that destination, but
   this is user-supplied information, not live tracking.
 - Return stores the actual return location; if none is selected, use the
-  configured default `Geel`. "Site" remains the available-custodian label and
-  is not a person or location record.
+  configured default `Geel`, including a historical name snapshot. "Site"
+  remains the available-custodian label and is not a person or location record.
 
 ### Database invariants
 
@@ -212,6 +215,8 @@ Every admin route checks the `admin` role server-side.
 | `POST /admin/elevators/{id}/unblock` | Admin | Require reason; keep any outstanding custody record open |
 | `GET/PATCH /admin/reservation-settings` | Admin | Read/update each reservation time limit independently |
 | `GET/POST /admin/locations`, `/admin/departments` | Admin | Manage site configuration and default location |
+| `GET /admin/reports/dashboard` | Admin | Aggregate reports filtered by Brussels-local dates, elevator, department, location, and trend bucket |
+| `GET /admin/reports/loans.csv`, `/admin/reports/loans-all.csv` | Admin | Export filtered loan history or all retained history; each export is audited |
 | `GET /admin/reports/*` | Admin | Inventory, active custody, reservations, and loan-history reports/exports |
 
 Use consistent HTTP semantics: `401` unauthenticated, `403` role denied, `404`
@@ -248,6 +253,21 @@ reservation/notification details and public elevator status.
 
 ## 8. Reporting semantics
 
+The admin Reports page uses the aggregate-first dashboard described in
+[phase-4-reports-proposal.md](phase-4-reports-proposal.md). Its API accepts
+`start_date`, `end_date`, `elevator_id`, `department_id`, `location_id`, and a
+day/week/month trend bucket. Dates are interpreted as site-local calendar days
+in `Europe/Brussels`, converted to UTC half-open query bounds, and limited to a
+maximum three-year range. The default UI range is the last 30 days. Filters
+are URL-backed and contain no person-level data.
+
+The dashboard aggregates in SQL; hourly aggregate buckets are converted to
+local day/week/month labels so daylight-saving transitions are handled without
+grouping individual loan rows in application memory. The reservation outcome
+panel uses date and elevator filters only. It is omitted with a clear note when
+department or pickup-location filters are selected because reservations do not
+store those dimensions.
+
 - **Current inventory:** available, checked out (including cancelled but not
   returned custody), blocked, retired, and last-known location.
 - **Current custody:** borrower snapshot, authenticated checkout actor,
@@ -262,9 +282,10 @@ reservation/notification details and public elevator status.
 - **Peak demand:** count of checkout starts grouped by local day-of-week and
   hour in `Europe/Brussels`; report the selected date range and included
   population.
-- **Exports:** CSV access is admin-only and follows the same filters and
-  retention policy as on-screen history. Record export actor/time in the audit
-  log. Escape spreadsheet-formula prefixes in exported text fields.
+- **Exports:** the filtered CSV follows the dashboard date/elevator/department/
+  location filters; a separately labelled all-retained-history CSV remains
+  available to admins. Record export actor/time in the audit log. Escape
+  spreadsheet-formula prefixes in exported text fields.
 - Do not label a loan overdue until operations later configures an overdue
   threshold. Store/report loan age without an overdue classification.
 

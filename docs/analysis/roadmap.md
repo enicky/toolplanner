@@ -140,10 +140,10 @@ Status: **Admin navigation and site configuration implemented; remaining page fu
   archive, and restore actions; protect the default location and require
   reassignment of linked elevators or active users before archiving.
 - [x] Document the proposed aggregate-first Reports dashboard and create visual
-  mockups in [phase-4-reports-proposal.md](phase-4-reports-proposal.md);
-  implementation awaits product-owner review.
-- [ ] Complete inventory location assignment/filtering and report date/filter
-  controls with URL query state.
+  mockups in [phase-4-reports-proposal.md](phase-4-reports-proposal.md), then
+  implement the aggregate dashboard, date/dimension filters, and URL query
+  state.
+- [ ] Complete inventory location assignment/filtering.
 
 - [x] Implement mobile elevator status and borrow pages.
 - [x] Make immediate checkout the default and implement the future reservation
@@ -158,9 +158,12 @@ Status: **Admin navigation and site configuration implemented; remaining page fu
 - [ ] Complete inventory elevator edit/retire/search flows and location
   assignment.
 - [x] Implement QR preview, download/print, and documented token rotation.
-- [ ] Complete active-loan and history reports with approved filters/export.
-- [ ] Enforce aggregate-by-default access and report age without an overdue
-  label until an operations threshold is approved.
+- [x] Implement the aggregate Reports dashboard with date/elevator/department/
+  location filters, URL state, filtered and all-retained CSV exports, and
+  Brussels-local trend grouping.
+- [x] Enforce aggregate-by-default dashboards, admin-only person-level exports,
+  and loan-age bands without an overdue label.
+- [ ] Continue PostgreSQL report query-plan validation as data volume grows.
 - [ ] Add frontend tests for success, validation, unavailable, stale, and
   unauthorized states.
 - [ ] Validate responsive behavior and accessibility with keyboard and assistive

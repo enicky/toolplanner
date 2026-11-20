@@ -1,12 +1,10 @@
 # Phase 4 — Reports and dashboard proposal
 
-**Status:** Proposed for product-owner review; no report-page implementation is
-included in this document change.
+**Status:** Implemented on the Reports page and documented here as the metric
+contract.
 
-The current Reports page lists lifetime checkout totals and average completed
-loan duration by elevator. The proposal below turns that page into an
-aggregate-first operational dashboard while keeping person-level history in the
-separate, admin-only export.
+The Reports page provides an aggregate-first operational dashboard while
+keeping person-level history in the separate, admin-only export.
 
 ## Visual previews
 
@@ -25,9 +23,9 @@ values are for layout review only.
 
 ### 1. Shared filters
 
-- Default to the last 30 days, with daily buckets. Use weekly buckets for longer
-  ranges and monthly buckets for multi-year views; allow an explicit day/week
-  switch where it remains readable. The mockup uses a weekly bucket selection
+- Default the UI to the last 30 days, with daily buckets. Use weekly buckets
+  for longer ranges and monthly buckets for multi-year views; allow an explicit
+  day/week/month grouping switch where it remains readable. The mockup uses a weekly bucket selection
   to keep the trend legible.
 - Offer a custom start/end date and optional elevator, department, and checkout
   location filters.
@@ -85,56 +83,50 @@ comparison is secondary context, not a performance target.
 - Apply all supported filters consistently to displayed aggregates and the
   filtered export. Keep the existing unrestricted history export clearly
   labelled if it remains available.
-- Use `department_snapshot` for department breakdowns; it records the
-  department name at checkout instead of reading the account's current
-  department. The current schema stores checkout/return locations only by
-  location ID; renaming a location can therefore change its displayed label in
-  historical reports. Before implementing a location breakdown, either add and
-  backfill immutable location-name snapshots or explicitly approve grouping
-  history under the location's current name.
-- Reservation records do not currently store department or location. Do not
-  imply reservation breakdowns by those dimensions unless a reservation is
-  linked to a completed loan and the chart explicitly reports loan data.
+- Use `department_id_snapshot` and `department_snapshot` for department
+  filtering and breakdowns. Store checkout and return location name snapshots
+  alongside location IDs; the migration backfills existing labels before
+  dashboard reports use them.
+- Reservation records do not currently store department or location. When
+  either dimension is filtered, the dashboard explains that reservation
+  outcomes are unavailable rather than showing unfiltered reservation values.
 - Data remains subject to the approved three-year cleanup. Reports must not
   reconstruct or expose data after its retention eligibility.
 
-## Implementation outline after approval
+## Implemented behavior
 
-1. Add a filtered aggregate-report API with validated date and dimension
-   filters; aggregate in the database rather than loading a capped list of
-   individual loans into application memory.
-2. Add the filter bar, KPI cards, and accessible charts/tables. Prefer chart
-   forms that retain readable labels and do not rely on color alone.
-3. Align the CSV export with the selected filters, preserve admin authorization,
-   and audit exports.
-4. Add API and frontend tests for role restrictions, empty data, date
-   inclusivity and Brussels daylight-saving boundaries, each filter, cancelled
-   outstanding custody, the reservation-rate denominator, and CSV/filter
-   agreement.
+The Reports page now provides the shared date/elevator/department/location
+filters, URL-backed state, day/week/month trend buckets, summary metrics,
+checkout trend, elevator usage, live custody-age bands, reservation outcomes,
+department and pickup-location breakdowns, and completed-loan duration bands.
+The charts retain readable labels and values and use responsive layouts.
 
-No schema change appears necessary for checkout trends, elevator use,
-department breakdowns, custody age, reservation outcomes, or loan-duration
-bands. A trustworthy historical location label does require a snapshot
-decision (and likely a schema migration). A database index or query-plan
-adjustment may also be needed after measuring real data volume. The existing
-usage endpoint currently reads a limited list of loan rows and returns
-lifetime per-elevator totals; it should not be treated as the final
-filtered-report API.
+The admin API aggregates loans in SQL and interprets date boundaries in
+`Europe/Brussels`, including daylight-saving transitions. The filtered CSV
+uses the same date and dimension filters and is audited; a separate
+all-retained-history export remains clearly labelled. The migration adds
+department and location name snapshots and backfills existing loans. If
+department or pickup-location filters are selected, the reservation panel is
+replaced with an explanation because reservations do not capture those fields.
 
-## Review requested
+The API limits filtered date ranges to three years, matching the retained
+history horizon. Trends use database hourly aggregates before converting to
+local day/week/month groups, rather than loading individual loan records into
+application memory. Query plans should still be reviewed as site data volume
+grows.
 
-Please review the two visual previews and confirm whether this is the right
-first release:
+## Delivered safeguards and tests
 
-- Keep the last 30 days as the default date range.
-- Include all six overview panels above, or identify any that should be
-  deferred.
-- Keep the live custody snapshot and descriptive age bands, without an overdue
-  label.
-- Keep person-level details exclusively in the separately labelled admin
-  export.
-- For historical location breakdowns, prefer immutable location-name snapshots
-  over showing the current name for past checkouts.
+- Aggregate responses contain no borrower names or user identities.
+- All report and export routes are admin-only; CSV text fields are protected
+  against spreadsheet-formula injection and export actions are audited.
+- Current age bands include administratively cancelled loans that have not
+  physically returned, without labelling any loan overdue.
+- Backend tests cover role restrictions, Brussels-local date grouping across
+  the daylight-saving boundary, dimension filters, historical location labels,
+  cancelled outstanding custody, the reservation pickup-rate denominator,
+  invalid ranges, and filtered/all-history export behavior.
+- Frontend tests cover dashboard rendering and filter-to-export query state.
 
-The existing Phase 4 roadmap items for report filters, dashboards, and tests
-remain open until the proposal is approved and implemented.
+The visual previews above remain the design reference; their sample numbers are
+illustrative, while the implemented page uses live aggregate data.

@@ -1,16 +1,18 @@
 import csv
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from io import BytesIO, StringIO
-from typing import Annotated
+from typing import Annotated, Literal
+from zoneinfo import ZoneInfo
 
 import qrcode
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql.elements import ColumnElement
 
 from toolplanner.config import settings
 from toolplanner.db import SessionLocal, build_engine
@@ -52,6 +54,8 @@ from toolplanner.security import (
     verify_password,
 )
 
+BRUSSELS_TIMEZONE = ZoneInfo("Europe/Brussels")
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
@@ -59,6 +63,111 @@ def utc_now() -> datetime:
 
 def as_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def report_period(
+    start_date: date | None, end_date: date | None
+) -> tuple[date, date, datetime, datetime]:
+    today = utc_now().astimezone(BRUSSELS_TIMEZONE).date()
+    end = end_date or today
+    start = start_date or end - timedelta(days=29)
+    if start > end:
+        raise HTTPException(status_code=422, detail="Start date must not be after end date.")
+    if (end - start).days >= 366 * 3:
+        raise HTTPException(status_code=422, detail="Report date range cannot exceed three years.")
+    start_utc = datetime.combine(start, time.min, BRUSSELS_TIMEZONE).astimezone(UTC)
+    end_utc = datetime.combine(
+        end + timedelta(days=1), time.min, BRUSSELS_TIMEZONE
+    ).astimezone(UTC)
+    return start, end, start_utc, end_utc
+
+
+def report_loan_conditions(
+    start_utc: datetime | None = None,
+    end_utc: datetime | None = None,
+    elevator_id: str | None = None,
+    department_id: str | None = None,
+    location_id: str | None = None,
+) -> list[ColumnElement[bool]]:
+    conditions: list[ColumnElement[bool]] = []
+    if start_utc is not None:
+        conditions.append(Loan.checked_out_at >= start_utc)
+    if end_utc is not None:
+        conditions.append(Loan.checked_out_at < end_utc)
+    if elevator_id:
+        conditions.append(Loan.elevator_id == elevator_id)
+    if department_id:
+        conditions.append(Loan.department_id_snapshot == department_id)
+    if location_id:
+        conditions.append(Loan.checkout_location_id == location_id)
+    return conditions
+
+
+def report_duration_seconds(db: Session):
+    if db.get_bind().dialect.name == "postgresql":
+        return func.extract("epoch", Loan.returned_at - Loan.checked_out_at)
+    return (func.julianday(Loan.returned_at) - func.julianday(Loan.checked_out_at)) * 86400
+
+
+def report_bucket_expression(db: Session):
+    if db.get_bind().dialect.name == "postgresql":
+        return func.date_trunc("hour", Loan.checked_out_at)
+    return func.strftime("%Y-%m-%d %H:00:00", Loan.checked_out_at)
+
+
+def local_bucket_label(value: datetime | str, bucket: str) -> str:
+    if isinstance(value, str):
+        instant = datetime.fromisoformat(value)
+    else:
+        instant = value
+    local_date = as_utc(instant).astimezone(BRUSSELS_TIMEZONE).date()
+    if bucket == "month":
+        return f"{local_date.year:04d}-{local_date.month:02d}"
+    if bucket == "week":
+        return (local_date - timedelta(days=local_date.weekday())).isoformat()
+    return local_date.isoformat()
+
+
+def report_bucket_labels(start: date, end: date, bucket: str) -> list[str]:
+    if bucket == "day":
+        return [
+            (start + timedelta(days=offset)).isoformat()
+            for offset in range((end - start).days + 1)
+        ]
+    if bucket == "week":
+        first = start - timedelta(days=start.weekday())
+        last = end - timedelta(days=end.weekday())
+        return [
+            (first + timedelta(weeks=offset)).isoformat()
+            for offset in range((last - first).days // 7 + 1)
+        ]
+    first_month = date(start.year, start.month, 1)
+    last_month = date(end.year, end.month, 1)
+    labels = []
+    current = first_month
+    while current <= last_month:
+        labels.append(f"{current.year:04d}-{current.month:02d}")
+        current = date(
+            current.year + (current.month == 12),
+            1 if current.month == 12 else current.month + 1,
+            1,
+        )
+    return labels
+
+
+def validate_report_filters(
+    db: Session,
+    elevator_id: str | None,
+    department_id: str | None,
+    location_id: str | None,
+) -> None:
+    for model, identifier, label in (
+        (Elevator, elevator_id, "Elevator"),
+        (Department, department_id, "Department"),
+        (Location, location_id, "Location"),
+    ):
+        if identifier and not db.get(model, identifier):
+            raise HTTPException(status_code=422, detail=f"Choose a valid {label.lower()} filter.")
 
 
 def audit(
@@ -387,14 +496,21 @@ def create_app(
             raise HTTPException(status_code=409, detail="This elevator is reserved.")
         department_id = payload.department_id or account.department_id
         department = require_department(db, department_id)
-        if payload.checkout_location_id and not db.get(Location, payload.checkout_location_id):
+        checkout_location = (
+            db.get(Location, payload.checkout_location_id)
+            if payload.checkout_location_id
+            else None
+        )
+        if payload.checkout_location_id and not checkout_location:
             raise HTTPException(status_code=422, detail="Choose a valid pickup location.")
         loan = Loan(
             elevator_id=elevator.id,
             checkout_actor_user_id=account.id,
             borrower_name=payload.borrower_name.strip(),
             department_snapshot=department.name,
+            department_id_snapshot=department.id,
             checkout_location_id=payload.checkout_location_id,
+            checkout_location_snapshot=checkout_location.name if checkout_location else None,
             destination=payload.destination.strip(),
             checked_out_at=now,
             status="active",
@@ -451,6 +567,7 @@ def create_app(
         loan.returned_at = now
         loan.return_actor_user_id = account.id
         loan.return_location_id = return_location_id
+        loan.return_location_snapshot = return_location.name
         elevator.last_known_location_id = return_location_id
         audit(db, account.id, "loan_returned", "loan", loan.id)
         db.commit()
@@ -1343,9 +1460,8 @@ def create_app(
         db: Annotated[Session, Depends(get_db)],
     ):
         rows = db.execute(
-            select(Loan, Elevator.registration_number, Location.name)
+            select(Loan, Elevator.registration_number)
             .join(Elevator, Elevator.id == Loan.elevator_id)
-            .outerjoin(Location, Location.id == Loan.checkout_location_id)
             .order_by(Loan.checked_out_at.desc())
             .limit(200)
         ).all()
@@ -1356,13 +1472,14 @@ def create_app(
                 "registration_number": registration_number,
                 "borrower_name": loan.borrower_name,
                 "department": loan.department_snapshot,
-                "checkout_location": location_name,
+                "checkout_location": loan.checkout_location_snapshot,
+                "return_location": loan.return_location_snapshot,
                 "destination": loan.destination,
                 "checked_out_at": loan.checked_out_at,
                 "returned_at": loan.returned_at,
                 "status": loan.status,
             }
-            for loan, registration_number, location_name in rows
+            for loan, registration_number in rows
         ]
 
     @app.get("/api/v1/admin/overview")
@@ -1478,53 +1595,269 @@ def create_app(
             for event, actor_name in rows
         ]
 
-    @app.get("/api/v1/admin/reports/usage")
-    def usage_report(
-        _: Annotated[UserAccount, Depends(require_admin)],
+    @app.get("/api/v1/admin/reports/dashboard")
+    def reports_dashboard(
         db: Annotated[Session, Depends(get_db)],
+        _: Annotated[UserAccount, Depends(require_admin)],
+        start_date: date | None = None,
+        end_date: date | None = None,
+        elevator_id: str | None = None,
+        department_id: str | None = None,
+        location_id: str | None = None,
+        bucket: Literal["day", "week", "month"] = "day",
     ):
-        rows = db.execute(
-            select(Loan, Elevator.registration_number)
-            .join(Elevator, Elevator.id == Loan.elevator_id)
-            .order_by(Elevator.registration_number)
-            .limit(10000)
-        ).all()
-        totals: dict[str, dict[str, float | int]] = {}
-        for loan, registration_number in rows:
-            stats = totals.setdefault(
-                registration_number,
-                {"checkout_count": 0, "duration_sum": 0.0, "duration_count": 0},
-            )
-            stats["checkout_count"] += 1
-            if loan.returned_at is not None:
-                duration = (
-                    as_utc(loan.returned_at) - as_utc(loan.checked_out_at)
-                ).total_seconds()
-                stats["duration_sum"] += duration
-                stats["duration_count"] += 1
-        return [
-            {
-                "registration_number": registration_number,
-                "checkout_count": int(stats["checkout_count"]),
-                "average_duration_seconds": (
-                    float(stats["duration_sum"]) / int(stats["duration_count"])
-                    if stats["duration_count"]
-                    else None
+        start, end, start_utc, end_utc = report_period(start_date, end_date)
+        validate_report_filters(db, elevator_id, department_id, location_id)
+        conditions = report_loan_conditions(
+            start_utc, end_utc, elevator_id, department_id, location_id
+        )
+        total_checkouts, completed_count, average_duration = db.execute(
+            select(
+                func.count(Loan.id),
+                func.count(Loan.id).filter(Loan.returned_at.is_not(None)),
+                func.avg(report_duration_seconds(db)).filter(
+                    Loan.returned_at.is_not(None)
                 ),
-            }
-            for registration_number, stats in sorted(totals.items())
+            ).where(*conditions)
+        ).one()
+
+        period_days = (end - start).days + 1
+        previous_start = start - timedelta(days=period_days)
+        previous_start_utc = datetime.combine(
+            previous_start, time.min, BRUSSELS_TIMEZONE
+        ).astimezone(UTC)
+        previous_count = db.scalar(
+            select(func.count(Loan.id)).where(
+                *report_loan_conditions(
+                    previous_start_utc,
+                    start_utc,
+                    elevator_id,
+                    department_id,
+                    location_id,
+                )
+            )
+        )
+        previous_count = int(previous_count or 0)
+        checkout_change_percent = (
+            round((int(total_checkouts or 0) - previous_count) * 100 / previous_count, 1)
+            if previous_count
+            else None
+        )
+
+        hour_bucket = report_bucket_expression(db)
+        hourly_rows = db.execute(
+            select(hour_bucket, func.count(Loan.id))
+            .where(*conditions)
+            .group_by(hour_bucket)
+            .order_by(hour_bucket)
+        ).all()
+        trend_counts: dict[str, int] = {}
+        for hour, count in hourly_rows:
+            label = local_bucket_label(hour, bucket)
+            trend_counts[label] = trend_counts.get(label, 0) + int(count)
+        trend = [
+            {"period": label, "checkout_count": trend_counts.get(label, 0)}
+            for label in report_bucket_labels(start, end, bucket)
         ]
 
-    @app.get("/api/v1/admin/reports/loans.csv")
-    def export_loans(
-        admin: Annotated[UserAccount, Depends(require_admin)],
-        db: Annotated[Session, Depends(get_db)],
-    ):
+        elevator_rows = db.execute(
+            select(
+                Elevator.id,
+                Elevator.registration_number,
+                func.count(Loan.id).label("checkout_count"),
+            )
+            .join(Loan, Loan.elevator_id == Elevator.id)
+            .where(*conditions)
+            .group_by(Elevator.id, Elevator.registration_number)
+            .order_by(func.count(Loan.id).desc(), Elevator.registration_number)
+            .limit(10)
+        ).all()
+        department_rows = db.execute(
+            select(
+                Loan.department_id_snapshot,
+                Loan.department_snapshot,
+                func.count(Loan.id).label("checkout_count"),
+            )
+            .where(*conditions)
+            .group_by(Loan.department_id_snapshot, Loan.department_snapshot)
+            .order_by(func.count(Loan.id).desc(), Loan.department_snapshot)
+        ).all()
+        location_rows = db.execute(
+            select(
+                Loan.checkout_location_id,
+                Loan.checkout_location_snapshot,
+                func.count(Loan.id).label("checkout_count"),
+            )
+            .where(*conditions)
+            .group_by(
+                Loan.checkout_location_id,
+                Loan.checkout_location_snapshot,
+            )
+            .order_by(func.count(Loan.id).desc(), Loan.checkout_location_snapshot)
+        ).all()
+
+        duration_seconds = report_duration_seconds(db)
+        duration_band = case(
+            (duration_seconds < 86_400, "Under 1 day"),
+            (duration_seconds < 259_200, "1 to 3 days"),
+            (duration_seconds < 604_800, "3 to 7 days"),
+            else_="7 days or more",
+        )
+        duration_rows = db.execute(
+            select(duration_band, func.count(Loan.id))
+            .where(*conditions, Loan.returned_at.is_not(None))
+            .group_by(duration_band)
+        ).all()
+        duration_counts = {label: int(count) for label, count in duration_rows}
+
+        custody_now = utc_now()
+        custody_conditions = report_loan_conditions(
+            elevator_id=elevator_id,
+            department_id=department_id,
+            location_id=location_id,
+        )
+        age_band = case(
+            (Loan.checked_out_at > custody_now - timedelta(days=1), "Under 24 hours"),
+            (Loan.checked_out_at > custody_now - timedelta(days=3), "1 to 3 days"),
+            (Loan.checked_out_at > custody_now - timedelta(days=7), "3 to 7 days"),
+            else_="7 days or more",
+        )
+        custody_rows = db.execute(
+            select(age_band, func.count(Loan.id))
+            .where(*custody_conditions, Loan.returned_at.is_(None))
+            .group_by(age_band)
+        ).all()
+        custody_counts = {label: int(count) for label, count in custody_rows}
+
+        reservation_metrics = None
+        reservation_note = None
+        if department_id or location_id:
+            reservation_note = (
+                "Reservation records do not capture department or pickup location, "
+                "so reservation metrics are unavailable with these filters."
+            )
+        else:
+            reservation_category = case(
+                (
+                    and_(
+                        Reservation.status == "confirmed",
+                        Reservation.starts_at > custody_now,
+                    ),
+                    "upcoming",
+                ),
+                (Reservation.status == "confirmed", "awaiting_pickup"),
+                (Reservation.status == "picked_up", "picked_up"),
+                (Reservation.status == "expired", "no_show"),
+                (Reservation.status == "cancelled", "cancelled"),
+                else_="other",
+            )
+            reservation_conditions = [
+                Reservation.starts_at >= start_utc,
+                Reservation.starts_at < end_utc,
+            ]
+            if elevator_id:
+                reservation_conditions.append(Reservation.elevator_id == elevator_id)
+            reservation_rows = db.execute(
+                select(reservation_category, func.count(Reservation.id))
+                .where(*reservation_conditions)
+                .group_by(reservation_category)
+            ).all()
+            reservation_counts = {
+                category: int(count) for category, count in reservation_rows
+            }
+            picked_up = reservation_counts.get("picked_up", 0)
+            no_show = reservation_counts.get("no_show", 0)
+            resolved = picked_up + no_show
+            reservation_metrics = {
+                "picked_up": picked_up,
+                "no_show": no_show,
+                "cancelled": reservation_counts.get("cancelled", 0),
+                "upcoming": reservation_counts.get("upcoming", 0),
+                "awaiting_pickup": reservation_counts.get("awaiting_pickup", 0),
+                "pickup_rate_percent": round(picked_up * 100 / resolved, 1)
+                if resolved
+                else None,
+                "resolved_count": resolved,
+            }
+
+        return {
+            "filters": {
+                "start_date": start.isoformat(),
+                "end_date": end.isoformat(),
+                "bucket": bucket,
+                "elevator_id": elevator_id,
+                "department_id": department_id,
+                "location_id": location_id,
+            },
+            "summary": {
+                "checkout_count": int(total_checkouts or 0),
+                "completed_loan_count": int(completed_count or 0),
+                "average_returned_duration_seconds": round(float(average_duration))
+                if average_duration is not None
+                else None,
+                "previous_checkout_count": previous_count,
+                "checkout_change_percent": checkout_change_percent,
+            },
+            "trend": trend,
+            "elevator_usage": [
+                {
+                    "elevator_id": row.id,
+                    "registration_number": row.registration_number,
+                    "checkout_count": int(row.checkout_count),
+                }
+                for row in elevator_rows
+            ],
+            "department_usage": [
+                {
+                    "department_id": row.department_id_snapshot,
+                    "department": row.department_snapshot or "Unassigned",
+                    "checkout_count": int(row.checkout_count),
+                }
+                for row in department_rows
+            ],
+            "location_usage": [
+                {
+                    "location_id": row.checkout_location_id,
+                    "location": row.checkout_location_snapshot or "Not recorded",
+                    "checkout_count": int(row.checkout_count),
+                }
+                for row in location_rows
+            ],
+            "duration_bands": [
+                {"band": label, "count": duration_counts.get(label, 0)}
+                for label in (
+                    "Under 1 day",
+                    "1 to 3 days",
+                    "3 to 7 days",
+                    "7 days or more",
+                )
+            ],
+            "current_custody_count": sum(custody_counts.values()),
+            "custody_age_bands": [
+                {"band": label, "count": custody_counts.get(label, 0)}
+                for label in (
+                    "Under 24 hours",
+                    "1 to 3 days",
+                    "3 to 7 days",
+                    "7 days or more",
+                )
+            ],
+            "reservation_outcomes": reservation_metrics,
+            "reservation_note": reservation_note,
+        }
+
+    def build_loan_export(
+        admin: UserAccount,
+        db: Session,
+        conditions: list[ColumnElement[bool]],
+        audit_details: str,
+        filename: str = "tool-planner-loans.csv",
+    ) -> StreamingResponse:
         rows = db.execute(
             select(Loan, Elevator.registration_number)
             .join(Elevator, Elevator.id == Loan.elevator_id)
+            .where(*conditions)
             .order_by(Loan.checked_out_at.desc())
-            .limit(5000)
         ).all()
         output = StringIO()
         writer = csv.writer(output)
@@ -1533,40 +1866,77 @@ def create_app(
                 "registration_number",
                 "borrower_name",
                 "department",
+                "checkout_location",
                 "destination",
                 "checked_out_at_utc",
                 "returned_at_utc",
+                "return_location",
                 "status",
             ]
         )
+
+        def csv_safe(value: str | None) -> str:
+            value = value or ""
+            if value.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
+                return "'" + value
+            return value
+
         for loan, registration_number in rows:
-            safe_borrower = loan.borrower_name
-            if safe_borrower.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
-                safe_borrower = "'" + safe_borrower
-            safe_department = loan.department_snapshot
-            if safe_department.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
-                safe_department = "'" + safe_department
-            safe_destination = loan.destination
-            if safe_destination.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
-                safe_destination = "'" + safe_destination
             writer.writerow(
                 [
-                    registration_number,
-                    safe_borrower,
-                    safe_department,
-                    safe_destination,
+                    csv_safe(registration_number),
+                    csv_safe(loan.borrower_name),
+                    csv_safe(loan.department_snapshot),
+                    csv_safe(loan.checkout_location_snapshot),
+                    csv_safe(loan.destination),
                     loan.checked_out_at.isoformat(),
                     loan.returned_at.isoformat() if loan.returned_at else "",
+                    csv_safe(loan.return_location_snapshot),
                     loan.status,
                 ]
             )
-        audit(db, admin.id, "loan_report_exported", "report", "loans")
+        audit(db, admin.id, "loan_report_exported", "report", "loans", details=audit_details)
         db.commit()
         output.seek(0)
         return StreamingResponse(
             iter([output.getvalue()]),
             media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": 'attachment; filename="tool-planner-loans.csv"'},
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    @app.get("/api/v1/admin/reports/loans.csv")
+    def export_filtered_loans(
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        db: Annotated[Session, Depends(get_db)],
+        start_date: date | None = None,
+        end_date: date | None = None,
+        elevator_id: str | None = None,
+        department_id: str | None = None,
+        location_id: str | None = None,
+    ):
+        start, end, start_utc, end_utc = report_period(start_date, end_date)
+        validate_report_filters(db, elevator_id, department_id, location_id)
+        filters = report_loan_conditions(
+            start_utc, end_utc, elevator_id, department_id, location_id
+        )
+        details = (
+            f"start_date={start.isoformat()};end_date={end.isoformat()};"
+            f"elevator_id={elevator_id or ''};department_id={department_id or ''};"
+            f"location_id={location_id or ''}"
+        )
+        return build_loan_export(admin, db, filters, details)
+
+    @app.get("/api/v1/admin/reports/loans-all.csv")
+    def export_all_retained_loans(
+        admin: Annotated[UserAccount, Depends(require_admin)],
+        db: Annotated[Session, Depends(get_db)],
+    ):
+        return build_loan_export(
+            admin,
+            db,
+            [],
+            "all retained history",
+            filename="tool-planner-all-retained-loans.csv",
         )
 
     return app

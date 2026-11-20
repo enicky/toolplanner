@@ -138,12 +138,15 @@ class Loan(TimestampMixin, Base):
     )
     borrower_name: Mapped[str] = mapped_column(String(160), nullable=False)
     department_snapshot: Mapped[str] = mapped_column(String(120), nullable=False)
+    department_id_snapshot: Mapped[str | None] = mapped_column(ForeignKey("department.id"))
     checkout_location_id: Mapped[str | None] = mapped_column(ForeignKey("location.id"))
+    checkout_location_snapshot: Mapped[str | None] = mapped_column(String(120))
     destination: Mapped[str] = mapped_column(String(240), nullable=False)
     checked_out_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     return_actor_user_id: Mapped[str | None] = mapped_column(ForeignKey("user_account.id"))
     returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     return_location_id: Mapped[str | None] = mapped_column(ForeignKey("location.id"))
+    return_location_snapshot: Mapped[str | None] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     cancelled_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("user_account.id"))
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -160,6 +163,8 @@ Index(
     sqlite_where=Loan.returned_at.is_(None),
 )
 Index("ix_loan_checked_out_at", Loan.checked_out_at)
+Index("ix_loan_department_id_snapshot", Loan.department_id_snapshot)
+Index("ix_loan_checkout_location_id", Loan.checkout_location_id)
 
 
 class ReservationPolicy(TimestampMixin, Base):

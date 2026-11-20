@@ -37,6 +37,52 @@ function installApiMock() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), 'http://localhost').pathname
       const method = (init?.method ?? 'GET').toUpperCase()
+      if (path === '/api/v1/admin/reports/dashboard') {
+        return new Response(JSON.stringify({
+          filters: {
+            start_date: '2026-03-01',
+            end_date: '2026-03-30',
+            bucket: 'day',
+            elevator_id: null,
+            department_id: null,
+            location_id: null,
+          },
+          summary: {
+            checkout_count: 12,
+            completed_loan_count: 8,
+            average_returned_duration_seconds: 10800,
+            previous_checkout_count: 10,
+            checkout_change_percent: 20,
+          },
+          trend: [{ period: '2026-03-30', checkout_count: 2 }],
+          elevator_usage: [{ elevator_id: 'lift-1', registration_number: 'LIFT-001', checkout_count: 12 }],
+          department_usage: [{ department_id: 'dept-1', department: 'Sites & Facilities', checkout_count: 12 }],
+          location_usage: [{ location_id: 'loc-1', location: 'Geel', checkout_count: 12 }],
+          duration_bands: [
+            { band: 'Under 1 day', count: 8 },
+            { band: '1 to 3 days', count: 0 },
+            { band: '3 to 7 days', count: 0 },
+            { band: '7 days or more', count: 0 },
+          ],
+          current_custody_count: 1,
+          custody_age_bands: [
+            { band: 'Under 24 hours', count: 1 },
+            { band: '1 to 3 days', count: 0 },
+            { band: '3 to 7 days', count: 0 },
+            { band: '7 days or more', count: 0 },
+          ],
+          reservation_outcomes: {
+            picked_up: 7,
+            no_show: 1,
+            cancelled: 2,
+            upcoming: 1,
+            awaiting_pickup: 0,
+            pickup_rate_percent: 87.5,
+            resolved_count: 8,
+          },
+          reservation_note: null,
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
       if (path === '/api/v1/admin/locations' && method === 'GET') {
         return new Response(JSON.stringify(locations), { status: 200, headers: { 'Content-Type': 'application/json' } })
       }
@@ -159,7 +205,6 @@ function installApiMock() {
           oldest_custody: [],
         },
         '/api/v1/admin/reservations': [],
-        '/api/v1/admin/reports/usage': [],
         '/api/v1/admin/loans': [],
         '/api/v1/admin/audit': [],
       }
@@ -302,7 +347,7 @@ describe('admin navigation', () => {
     )
 
     await screen.findByRole('heading', { level: 1, name: 'Locations & departments' })
-    expect(await screen.findByText('Geel')).toBeTruthy()
+    expect(await screen.findByText('Geel', { selector: 'strong' })).toBeTruthy()
     expect(screen.getAllByRole('button', { name: 'Delete' })[0].hasAttribute('disabled')).toBe(true)
 
     await user.click(screen.getByRole('tab', { name: 'Departments' }))
@@ -328,5 +373,36 @@ describe('admin navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Restore' }))
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull())
     expect(screen.getByText('Annex West')).toBeTruthy()
+  })
+
+  it('renders aggregate reports and applies URL-backed filters to export', async () => {
+    const fetchMock = installApiMock()
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/admin/reports?start_date=2026-03-01&end_date=2026-03-30']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const checkoutMetric = (await screen.findByText('Checkouts in range')).parentElement
+    expect(await within(checkoutMetric!).findByText('12')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Borrowing trend' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'By pickup location' })).toBeTruthy()
+    expect(screen.getByText('87.5%')).toBeTruthy()
+    const exportLink = screen.getByRole('link', { name: 'Export filtered loan history' })
+    expect(exportLink.getAttribute('href')).toContain('start_date=2026-03-01')
+    expect(exportLink.getAttribute('href')).toContain('end_date=2026-03-30')
+
+    await user.selectOptions(screen.getByLabelText('Department'), 'dept-2')
+    await user.click(screen.getByRole('button', { name: 'Apply filters' }))
+    await waitFor(() => {
+      const request = fetchMock.mock.calls
+        .map(([input]) => new URL(String(input), 'http://localhost'))
+        .find((url) => url.pathname === '/api/v1/admin/reports/dashboard' &&
+          url.searchParams.get('department_id') === 'dept-2')
+      expect(request).toBeTruthy()
+    })
+    expect(screen.getByRole('link', { name: 'Export filtered loan history' }).getAttribute('href'))
+      .toContain('department_id=dept-2')
   })
 })
