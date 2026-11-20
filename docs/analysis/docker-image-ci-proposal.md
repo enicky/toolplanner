@@ -42,6 +42,9 @@ tag yet.
 - No Git version tags exist in the repository history. The first release tag
   must be created explicitly; the workflow should not infer a tag from the
   existing product release.
+- [`scripts/release-images.sh`](../../scripts/release-images.sh) now provides
+  a guarded manual tag-and-push flow. Its `initial` mode uses Helm's current
+  `appVersion`; later modes increment the latest version tag.
 - GHCR is selected, but the package visibility and cluster pull access have
   not been specified. Private packages require cluster credentials; the chart
   now exposes the configurable `imagePullSecrets` setting.

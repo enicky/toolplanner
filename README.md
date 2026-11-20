@@ -111,3 +111,20 @@ Omit `imagePullSecrets` for public images. Review the rendered chart, secret
 references, ingress/TLS configuration, backup/restore process, and operational
 limits before deployment. Confirm that the selected GHCR package visibility
 and credentials allow the cluster to pull the images.
+
+### Manually publishing a release's images
+
+Run the release script from a clean, up-to-date `main` checkout. It requires
+confirmation before pushing a version tag; pushing the tag starts the GitHub
+Actions build and GHCR publication. The initial release uses the current Helm
+`appVersion`; later releases increment the latest version tag:
+
+```sh
+./scripts/release-images.sh initial
+./scripts/release-images.sh patch
+./scripts/release-images.sh minor
+./scripts/release-images.sh major
+```
+
+Choose one command per release. The script only creates and pushes the Git tag;
+it does not edit application or chart version files.
