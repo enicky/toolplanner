@@ -18,6 +18,10 @@ spec:
             app.kubernetes.io/component: reservation-maintenance
         spec:
           restartPolicy: Never
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
@@ -25,7 +29,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: reservation-maintenance
-              image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+              image: {{ include "tool-planner.image" .Values.image.api | quote }}
               imagePullPolicy: {{ .Values.image.api.pullPolicy }}
               securityContext:
                 {{- toYaml .Values.securityContext.api | nindent 16 }}

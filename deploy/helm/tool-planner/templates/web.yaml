@@ -33,13 +33,17 @@ spec:
         app.kubernetes.io/component: web
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: web
-          image: "{{ .Values.image.web.repository }}:{{ .Values.image.web.tag }}"
+          image: {{ include "tool-planner.image" .Values.image.web | quote }}
           imagePullPolicy: {{ .Values.image.web.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext.web | nindent 12 }}
