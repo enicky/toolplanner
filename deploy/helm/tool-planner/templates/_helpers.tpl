@@ -10,6 +10,14 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "tool-planner.image" -}}
+{{- if .digest -}}
+{{- printf "%s@%s" .repository .digest -}}
+{{- else -}}
+{{- printf "%s:%s" .repository .tag -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "tool-planner.labels" -}}
 app.kubernetes.io/name: {{ include "tool-planner.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}

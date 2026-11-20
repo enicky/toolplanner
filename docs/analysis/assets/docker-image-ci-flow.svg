@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 520" role="img" aria-labelledby="title description">
+  <title id="title">Proposed Docker image CI and release flow</title>
+  <desc id="description">Pull requests run the existing checks and build both Docker images without publishing. An approved version tag runs checks, builds API and web ARM64 images from the same commit, publishes them to GitHub Container Registry with version and commit identifiers, and makes the image digests available for Helm deployment.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#596579"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f8fc; }
+      .card { fill: #fff; stroke: #cbd2e1; stroke-width: 2; }
+      .event { fill: #eee9ff; stroke: #6552a3; }
+      .build { fill: #eaf3ff; stroke: #386da5; }
+      .publish { fill: #e8f5ef; stroke: #327456; }
+      .deploy { fill: #fff4df; stroke: #95631a; }
+      .title { font: 700 20px system-ui, sans-serif; fill: #172033; }
+      .body { font: 16px system-ui, sans-serif; fill: #283449; }
+      .small { font: 14px system-ui, sans-serif; fill: #3e4b60; }
+      .lane { font: 700 15px system-ui, sans-serif; fill: #4a5568; letter-spacing: .04em; }
+      .connector { fill: none; stroke: #596579; stroke-width: 2.5; marker-end: url(#arrow); }
+      .divider { stroke: #d7dce7; stroke-width: 1.5; stroke-dasharray: 6 7; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1120" height="520" rx="20"/>
+  <text class="lane" x="40" y="42">PULL REQUEST — VALIDATE ONLY</text>
+  <rect class="card event" x="40" y="68" width="220" height="112" rx="14"/>
+  <text class="title" x="60" y="108">Pull request</text>
+  <text class="body" x="60" y="138">Proposed code changes</text>
+  <path class="connector" d="M260 124 H314"/>
+  <rect class="card build" x="325" y="68" width="330" height="112" rx="14"/>
+  <text class="title" x="347" y="105">Checks + image builds</text>
+  <text class="body" x="347" y="133">API and web; no registry push</text>
+  <text class="small" x="347" y="158">Read-only token; no secrets</text>
+  <path class="connector" d="M655 124 H709"/>
+  <rect class="card event" x="720" y="68" width="350" height="112" rx="14"/>
+  <text class="title" x="742" y="105">Merge only after checks pass</text>
+  <text class="body" x="742" y="135">Existing tests and Helm checks remain</text>
+
+  <line class="divider" x1="40" y1="218" x2="1080" y2="218"/>
+  <text class="lane" x="40" y="258">APPROVED RELEASE — PUBLISH</text>
+  <rect class="card event" x="40" y="284" width="205" height="126" rx="14"/>
+  <text class="title" x="61" y="325">Version tag</text>
+  <text class="body" x="61" y="355">e.g. v1.2.3</text>
+  <text class="small" x="61" y="382">After release approval</text>
+  <path class="connector" d="M245 347 H286"/>
+  <rect class="card build" x="297" y="284" width="260" height="126" rx="14"/>
+  <text class="title" x="319" y="325">Build both images</text>
+  <text class="body" x="319" y="355">Same source commit</text>
+  <text class="small" x="319" y="382">API + web</text>
+  <path class="connector" d="M557 347 H598"/>
+  <rect class="card publish" x="609" y="284" width="245" height="126" rx="14"/>
+  <text class="title" x="631" y="325">Publish images</text>
+  <text class="body" x="631" y="355">GHCR · linux/arm64</text>
+  <text class="small" x="631" y="382">Version + commit + digests</text>
+  <path class="connector" d="M854 347 H895"/>
+  <rect class="card deploy" x="906" y="284" width="174" height="126" rx="14"/>
+  <text class="title" x="925" y="325">Helm deploy</text>
+  <text class="body" x="925" y="355">Approved image ref</text>
+  <text class="small" x="925" y="382">Pull access configured</text>
+  <text class="small" x="40" y="470">Publishing is tag-gated; only the publisher receives package-write permission.</text>
+</svg>

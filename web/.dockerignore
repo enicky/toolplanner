@@ -1,0 +1,9 @@
+.git
+node_modules
+dist
+.vite
+*.tsbuildinfo
+*.log
+.npmrc
+.env
+.env.*

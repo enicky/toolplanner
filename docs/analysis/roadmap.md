@@ -174,7 +174,7 @@ criteria on supported mobile and desktop browsers.
 
 ## Phase 5 — Security, deployment, and operations
 
-Status: **Docker and Helm implemented and locally validated; production operations remain**
+Status: **Docker/Helm implemented; image CI implementation underway; production operations remain**
 
 - [x] Add Dockerfile(s) and build API/frontend images with non-root
   defaults.
@@ -188,6 +188,12 @@ Status: **Docker and Helm implemented and locally validated; production operatio
   active loan or unfulfilled reservation requires them.
 - [x] Implement scheduled reservation no-show maintenance and late alerts.
 - [ ] Add rollback/recovery guidance and production secret provisioning.
+- [ ] Implement pull-request Docker builds and publish API/web `linux/arm64`
+  images to GHCR on approved `vMAJOR.MINOR.PATCH` tags, with version and
+  full-commit-SHA tags, recorded digests, and digest-aware Helm references;
+  confirm package visibility and cluster pull access first (see
+  [docker-image-ci-proposal.md](docker-image-ci-proposal.md)). Verify the first
+  release publication and pull/run on the Turing RK1 before marking complete.
 - [ ] Configure logs, metrics, alerting, rate limits, and operational dashboards.
 - [ ] Document backup schedule, restore test, disaster recovery, and backup
   retention; verify restored data is cleaned before application access.

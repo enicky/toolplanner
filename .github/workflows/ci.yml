@@ -60,3 +60,126 @@ jobs:
         run: helm lint deploy/helm/tool-planner
       - name: Render chart
         run: helm template tool-planner deploy/helm/tool-planner --set ingress.host=tool-planner.example.test
+      - name: Verify digest-pinned images and pull secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          rendered="$(helm template tool-planner deploy/helm/tool-planner \
+            --set-string image.api.repository=ghcr.io/example/toolplanner-api \
+            --set-string image.api.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set-string image.web.repository=ghcr.io/example/toolplanner-web \
+            --set-string image.web.digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set imagePullSecrets[0].name=ghcr-pull-secret)"
+          test "$(grep -Fc 'image: "ghcr.io/example/toolplanner-api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"' <<< "$rendered")" -eq 4
+          grep -Fq 'image: "ghcr.io/example/toolplanner-web@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"' <<< "$rendered"
+          test "$(grep -Fc 'name: ghcr-pull-secret' <<< "$rendered")" -eq 5
+
+  container-build:
+    if: github.event_name == 'pull_request' || !startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            context: ./backend
+          - image: web
+            context: ./web
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Build ${{ matrix.image }} image for ARM64
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/arm64
+          push: false
+
+  publish-images:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - backend
+      - frontend
+      - helm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Validate release tag
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Release tags must match vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Normalize GHCR owner
+        id: owner
+        shell: bash
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate API image metadata
+        id: meta-api
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ steps.owner.outputs.owner }}/toolplanner-api
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+      - name: Generate web image metadata
+        id: meta-web
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ steps.owner.outputs.owner }}/toolplanner-web
+          flavor: latest=false
+          tags: |
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+      - name: Build and publish API image for ARM64
+        id: build-api
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ./backend
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+      - name: Build and publish web image for ARM64
+        id: build-web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ./web
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+      - name: Record published image digests
+        env:
+          API_IMAGE: ghcr.io/${{ steps.owner.outputs.owner }}/toolplanner-api
+          API_DIGEST: ${{ steps.build-api.outputs.digest }}
+          WEB_IMAGE: ghcr.io/${{ steps.owner.outputs.owner }}/toolplanner-web
+          WEB_DIGEST: ${{ steps.build-web.outputs.digest }}
+        shell: bash
+        run: |
+          {
+            echo "## Published ARM64 images"
+            echo
+            echo "| Component | Release tag | Commit tag | Digest reference |"
+            echo "| --- | --- | --- | --- |"
+            echo "| API | \`$GITHUB_REF_NAME\` | \`sha-$GITHUB_SHA\` | \`$API_IMAGE@$API_DIGEST\` |"
+            echo "| Web | \`$GITHUB_REF_NAME\` | \`sha-$GITHUB_SHA\` | \`$WEB_IMAGE@$WEB_DIGEST\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

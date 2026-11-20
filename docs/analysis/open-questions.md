@@ -40,8 +40,25 @@ settings such as ingress host/class, namespace, secret references, and
 PostgreSQL connection details will be provided through the configurable Helm
 values when the deployment environment is prepared.
 
+### Container image release automation
+
+The product owner confirmed GHCR, `vMAJOR.MINOR.PATCH` release tags,
+version-specific and commit-specific image tags, digest recording and
+digest-pinned deployments, and ARM64 images for the Turing RK1. The repository
+does not yet have a Git release tag; the first tag must be created deliberately.
+
+| Area | Confirmed decision | Remaining follow-up |
+| --- | --- | --- |
+| Registry | Use GitHub Container Registry (GHCR). | Confirm package visibility and deployment-cluster pull access. Private packages need a cluster pull secret and Helm `imagePullSecrets` support. |
+| Versioning | Use `vMAJOR.MINOR.PATCH`; publish version and full-commit-SHA tags, record digests, and prefer digest-pinned deployments. | Create the first release tag explicitly. Update Helm templates/values to accept digest references. |
+| Platforms | Build `linux/arm64` images for the Turing RK1. | Validate both images on the RK1 and confirm the deployment OS/runtime. |
+
+See [docker-image-ci-proposal.md](docker-image-ci-proposal.md) for the full
+analysis and implementation acceptance criteria.
+
 ## Decision log
 
 | Date | Decision | Owner | Rationale / follow-up |
 | --- | --- | --- | --- |
 | 2026-11-15 | Confirmed decisions listed above. | Product owner | Requirements supplied for the analysis; deployment values will be supplied through Helm configuration. |
+| 2026-11-20 | Selected GHCR, `vMAJOR.MINOR.PATCH` releases, version and commit-specific tags, digest recording/pinning, and ARM64 images for the Turing RK1. | Product owner | Confirm package visibility and cluster pull access; add digest-aware Helm image references and validate on the target hardware before publishing. |

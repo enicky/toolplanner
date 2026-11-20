@@ -20,6 +20,8 @@ Detailed API, database, security, and deployment design is in
 [solution-design.md](solution-design.md).
 The implemented report dashboard, including visual previews and metric
 definitions, is documented in [phase-4-reports-proposal.md](phase-4-reports-proposal.md).
+The proposed GitHub Actions image-build and release workflow is analyzed in
+[docker-image-ci-proposal.md](docker-image-ci-proposal.md).
 
 ## At a glance
 

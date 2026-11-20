@@ -87,19 +87,27 @@ No default admin credentials are included in source or container images.
 
 ## Kubernetes deployment
 
-Build and publish the API and web images, create the database URL secret, then
-provide environment-specific ingress, image, and secret settings through Helm.
-The chart does not install PostgreSQL or infrastructure services:
+The GitHub Actions workflow builds both images for `linux/arm64` on pull
+requests without publishing. A `vMAJOR.MINOR.PATCH` tag publishes the API and
+web images to GHCR with version and commit-specific tags; the workflow summary
+records their digests. Deploy using those digest references, create the
+database URL secret, and provide environment-specific settings through Helm.
+For private GHCR packages, create a Kubernetes image-pull secret and pass it
+through `imagePullSecrets`. The chart does not install PostgreSQL or
+infrastructure services:
 
 ```sh
 helm lint deploy/helm/tool-planner
 helm template tool-planner deploy/helm/tool-planner \
-  --set image.api.repository=YOUR_REGISTRY/tool-planner-api \
-  --set image.api.tag=YOUR_TAG \
-  --set image.web.repository=YOUR_REGISTRY/tool-planner-web \
-  --set image.web.tag=YOUR_TAG \
+  --set image.api.repository=ghcr.io/OWNER/toolplanner-api \
+  --set-string image.api.digest=sha256:API_IMAGE_DIGEST \
+  --set image.web.repository=ghcr.io/OWNER/toolplanner-web \
+  --set-string image.web.digest=sha256:WEB_IMAGE_DIGEST \
+  --set imagePullSecrets[0].name=ghcr-pull-secret \
   --set ingress.host=YOUR_HOST
 ```
 
-Review the rendered chart, secret references, ingress/TLS configuration,
-backup/restore process, and operational limits before deployment.
+Omit `imagePullSecrets` for public images. Review the rendered chart, secret
+references, ingress/TLS configuration, backup/restore process, and operational
+limits before deployment. Confirm that the selected GHCR package visibility
+and credentials allow the cluster to pull the images.
