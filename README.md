@@ -112,6 +112,19 @@ references, ingress/TLS configuration, backup/restore process, and operational
 limits before deployment. Confirm that the selected GHCR package visibility
 and credentials allow the cluster to pull the images.
 
+The web pod proxies API requests using the API Service's fully qualified
+in-cluster DNS name. If the cluster uses a DNS domain other than
+`cluster.local`, set `web.clusterDomain` to that domain; `web.dnsResolver`
+may be set to the cluster DNS resolver address when it cannot be inferred from
+the pod's `/etc/resolv.conf`. When an external Gateway API route targets the
+web Service, its `backendRef.name` must match the chart's rendered Service
+name (for a `tool-planner` release, `tool-planner-web`).
+
+The RK1 cluster's Argo CD configuration is maintained in the
+[cluster-template2 repository](https://github.com/enicky/cluster-template2).
+It consumes this chart at a release tag and keeps cluster-specific PostgreSQL,
+GHCR credentials, and HTTPRoute configuration in the cluster repository.
+
 ### Manually publishing a release's images
 
 Run the release script from a clean, up-to-date `main` checkout. It requires

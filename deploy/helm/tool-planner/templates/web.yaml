@@ -37,6 +37,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -52,7 +56,7 @@ spec:
               containerPort: 8080
           env:
             - name: TOOLPLANNER_API_UPSTREAM
-              value: {{ printf "%s-api:%v" (include "tool-planner.fullname" .) .Values.service.api.port | quote }}
+              value: {{ printf "%s-api.%s.svc.%s:%v" (include "tool-planner.fullname" .) .Release.Namespace (.Values.web.clusterDomain | default "cluster.local" | trimSuffix ".") .Values.service.api.port | quote }}
             {{- with .Values.web.dnsResolver }}
             - name: TOOLPLANNER_DNS_RESOLVER
               value: {{ . | quote }}

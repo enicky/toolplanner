@@ -69,10 +69,14 @@ jobs:
             --set-string image.api.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             --set-string image.web.repository=ghcr.io/example/toolplanner-web \
             --set-string image.web.digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
-            --set imagePullSecrets[0].name=ghcr-pull-secret)"
+            --set imagePullSecrets[0].name=ghcr-pull-secret \
+            --set 'nodeSelector.kubernetes\.io/arch=arm64')"
           test "$(grep -Fc 'image: "ghcr.io/example/toolplanner-api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"' <<< "$rendered")" -eq 4
           grep -Fq 'image: "ghcr.io/example/toolplanner-web@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"' <<< "$rendered"
+          grep -Fq 'value: "tool-planner-api.default.svc.cluster.local:8000"' <<< "$rendered"
+          grep -Fq 'name: tool-planner-web' <<< "$rendered"
           test "$(grep -Fc 'name: ghcr-pull-secret' <<< "$rendered")" -eq 5
+          test "$(grep -Fc 'kubernetes.io/arch: arm64' <<< "$rendered")" -eq 5
 
   container-build:
     if: github.event_name == 'pull_request' || !startsWith(github.ref, 'refs/tags/')

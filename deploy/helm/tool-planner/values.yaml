@@ -2,6 +2,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 imagePullSecrets: []
+nodeSelector: {}
 
 image:
   api:
@@ -27,6 +28,7 @@ service:
 
 web:
   dnsResolver: ""
+  clusterDomain: cluster.local
 
 ingress:
   enabled: true
