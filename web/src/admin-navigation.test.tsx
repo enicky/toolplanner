@@ -3,7 +3,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import App from './App'
 
 const adminAccount = {
@@ -15,7 +15,8 @@ const adminAccount = {
   must_change_password: false,
 }
 
-function installApiMock() {
+function installApiMock(options: { sessionExpired?: boolean; invalidLogin?: boolean } = {}) {
+  let sessionExpired = options.sessionExpired ?? false
   const elevators = [
     {
       id: 'lift-1',
@@ -37,6 +38,25 @@ function installApiMock() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), 'http://localhost').pathname
       const method = (init?.method ?? 'GET').toUpperCase()
+      if (path === '/api/v1/auth/login' && method === 'POST') {
+        if (options.invalidLogin) {
+          return new Response(JSON.stringify({ detail: 'Invalid username or password.' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        sessionExpired = false
+        return new Response(JSON.stringify({ user: adminAccount }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      if (path === '/api/v1/me' && sessionExpired) {
+        return new Response(JSON.stringify({ detail: 'Sign in is required.' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
       if (path === '/api/v1/admin/reports/dashboard') {
         return new Response(JSON.stringify({
           filters: {
@@ -218,6 +238,11 @@ function installApiMock() {
   return fetchMock
 }
 
+function CurrentLocation() {
+  const location = useLocation()
+  return <span data-testid="current-location">{`${location.pathname}${location.search}`}</span>
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -233,6 +258,39 @@ beforeEach(() => {
 })
 
 describe('admin navigation', () => {
+  it('redirects an expired session to login', async () => {
+    installApiMock({ sessionExpired: true })
+    render(
+      <MemoryRouter initialEntries={['/admin/users']}>
+        <App />
+        <CurrentLocation />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to continue' })).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('current-location').textContent).toBe('/login'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('shows invalid credentials on the login page without redirecting again', async () => {
+    installApiMock({ sessionExpired: true, invalidLogin: true })
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/admin/users']}>
+        <App />
+        <CurrentLocation />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to continue' })).toBeTruthy()
+    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'admin')
+    await user.type(screen.getByLabelText('Password'), 'wrong-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Invalid username or password.')
+    expect(screen.getByTestId('current-location').textContent).toBe('/login')
+  })
+
   it('opens separate admin destinations through direct routes and sidebar links', async () => {
     installApiMock()
     const user = userEvent.setup()

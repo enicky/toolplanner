@@ -299,6 +299,8 @@ store those dimensions.
 - Use server-side sessions in `Secure`, `HttpOnly`, `SameSite` cookies, CSRF
   protection on writes, login rate limits, generic login errors, and session
   revocation on password reset/account disablement.
+- When a protected API request returns `401`, clear the client account and
+  redirect to `/login`; an invalid login remains on that page with its error.
 - Do not allow role changes or account disablement to reduce active admins
   below two. Audit user creation, resets, role changes, disablement, block/
   unblock, loan cancellation, return corrections, and exports.

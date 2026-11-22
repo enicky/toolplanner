@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 import { brusselsTimeToIso } from './time'
@@ -205,6 +206,19 @@ type ReportsDashboardData = {
   reservation_note: string | null
 }
 
+const sessionExpiredEvent = 'toolplanner:session-expired'
+
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly path: string,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   if (init.body && !headers.has('Content-Type')) {
@@ -229,7 +243,10 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const payload = (await response.json().catch(() => null)) as
       | { detail?: string }
       | null
-    throw new Error(payload?.detail ?? `Request failed (${response.status}).`)
+    if (response.status === 401 && path !== '/auth/login') {
+      window.dispatchEvent(new Event(sessionExpiredEvent))
+    }
+    throw new ApiError(payload?.detail ?? `Request failed (${response.status}).`, response.status, path)
   }
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
@@ -270,6 +287,7 @@ function formatLoanAge(checkedOutAt: string): string {
 
 export default function App() {
   const location = useLocation()
+  const navigate = useNavigate()
   const qrToken = useMemo(() => {
     const match = location.pathname.match(/^\/qr\/([^/]+)\/?$/)
     return match?.[1] ? decodeURIComponent(match[1]) : null
@@ -314,6 +332,19 @@ export default function App() {
   }, [qrToken])
 
   useEffect(() => {
+    function handleSessionExpired() {
+      setAccount(null)
+      setNotifications([])
+      if (location.pathname !== '/login') {
+        navigate('/login', { replace: true })
+      }
+    }
+
+    window.addEventListener(sessionExpiredEvent, handleSessionExpired)
+    return () => window.removeEventListener(sessionExpiredEvent, handleSessionExpired)
+  }, [location.hash, location.pathname, location.search, navigate])
+
+  useEffect(() => {
     void refresh()
   }, [refresh])
 
@@ -331,6 +362,7 @@ export default function App() {
       setMessage('Done.')
       await refresh()
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401 && e.path !== '/auth/login') return
       setError(e instanceof Error ? e.message : 'The request could not be completed.')
     } finally {
       setBusy(false)
