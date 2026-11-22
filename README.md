@@ -90,8 +90,9 @@ No default admin credentials are included in source or container images.
 The GitHub Actions workflow builds both images for `linux/arm64` on pull
 requests without publishing. A `vMAJOR.MINOR.PATCH` tag publishes the API and
 web images to GHCR with version and commit-specific tags; the workflow summary
-records their digests. Deploy using those digest references, create the
-database URL secret, and provide environment-specific settings through Helm.
+and the `tool-planner-release-metadata` artifact record their digests. Deploy
+using those digest references, create the database URL secret, and provide
+environment-specific settings through Helm.
 For private GHCR packages, create a Kubernetes image-pull secret and pass it
 through `imagePullSecrets`. The chart does not install PostgreSQL or
 infrastructure services:

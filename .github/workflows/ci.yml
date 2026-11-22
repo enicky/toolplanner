@@ -188,3 +188,19 @@ jobs:
             echo "| API | \`$GITHUB_REF_NAME\` | \`sha-$GITHUB_SHA\` | \`$API_IMAGE@$API_DIGEST\` |"
             echo "| Web | \`$GITHUB_REF_NAME\` | \`sha-$GITHUB_SHA\` | \`$WEB_IMAGE@$WEB_DIGEST\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+          jq -n \
+            --arg version "$GITHUB_REF_NAME" \
+            --arg commit "$GITHUB_SHA" \
+            --arg api_image "$API_IMAGE" \
+            --arg api_digest "$API_DIGEST" \
+            --arg web_image "$WEB_IMAGE" \
+            --arg web_digest "$WEB_DIGEST" \
+            '{version: $version, commit: $commit, api: {image: $api_image, digest: $api_digest}, web: {image: $web_image, digest: $web_digest}}' \
+            > release-metadata.json
+      - name: Upload release metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: tool-planner-release-metadata
+          path: release-metadata.json
+          if-no-files-found: error
+          retention-days: 30
